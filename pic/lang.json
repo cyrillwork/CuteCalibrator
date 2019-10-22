@@ -1,0 +1,14 @@
+{
+	"en": {
+                "0": "Touch the target to continue ",
+                "1": "or wait to abort",
+                "2": "Mis-click detected, restarting...",
+                "3": "The calibration has been completed"
+	},
+        "ru": {
+                "0": "Нажмите на цель для продолжения",
+                "1": "или ожидайте для завершения ...",
+                "2": "Определено некорректное нажатие, перезапуск...",
+                "3": "Калибровка окончена"
+        }
+}
