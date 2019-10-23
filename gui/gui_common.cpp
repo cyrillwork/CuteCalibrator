@@ -35,26 +35,30 @@ void get_display_texts_default(std::vector<std::string> *texts, Calibrator *cali
 {
 	switch(calibrator->getLang().getLang())
 	{
+		case LangKind::fr:
+		{
+			texts->push_back("Touchez la cible pour continuer");
+			texts->push_back("ou attendez pour annuler");
+			texts->push_back("Intéraction tactile incorrecte. Redémarrage en cours…");
+			texts->push_back("La calibration est terminée");
+		}
+		break;
+
 		case LangKind::ru:
 		{
-			texts->push_back("Нажмите на цель для продолжения");
-			//texts->push_back("");
-			texts->push_back("или ожидайте для завершения");
-			texts->push_back("Определено некорректное нажатие, перезапуск...");
-			texts->push_back("Калибровка окончена");
-			//texts->push_back("");
+			texts->push_back("Нажмите на цель, чтобы продолжить, ");
+			texts->push_back("или ожидайте, чтобы отменить калибровку");
+			texts->push_back("Некорректное нажатие. Перезапуск...");
+			texts->push_back("Калибровка завершена");
 		}
 		break;
 
 		default:
 		{
 			texts->push_back("Touch the target to continue ");
-			//texts->push_back("");
-			texts->push_back("or wait to abort");
-			//texts->push_back("Resolve Dispute");
-			//texts->push_back("");
-			texts->push_back("Mis-click detected, restarting...");
-			texts->push_back("The calibration has been completed");
+			texts->push_back("or wait to cancel");
+			texts->push_back("Mistouch detected, restarting...");
+			texts->push_back("Calibration completed");
 		}
 
 	}

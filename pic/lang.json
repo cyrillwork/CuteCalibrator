@@ -1,14 +1,20 @@
 {
 	"en": {
                 "0": "Touch the target to continue ",
-                "1": "or wait to abort",
-                "2": "Mis-click detected, restarting...",
-                "3": "The calibration has been completed"
+                "1": "or wait to cancel",
+                "2": "Mistouch detected, restarting...",
+                "3": "Calibration completed"
 	},
         "ru": {
-                "0": "Нажмите на цель для продолжения",
-                "1": "или ожидайте для завершения ...",
-                "2": "Определено некорректное нажатие, перезапуск...",
-                "3": "Калибровка окончена"
-        }
+                "0": "Нажмите на цель, чтобы продолжить, ",
+                "1": "или ожидайте, чтобы отменить калибровку",
+                "2": "Некорректное нажатие. Перезапуск...",
+                "3": "Калибровка завершена"
+        },
+	"fr": {
+                "0": "Touchez la cible pour continuer",
+                "1": "ou attendez pour annuler",
+                "2": "Intéraction tactile incorrecte. Redémarrage en cours…",
+                "3": "La calibration est terminée"
+	}
 }
