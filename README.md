@@ -1,4 +1,4 @@
-#Cute calibrator for Linux
+# Cute calibrator for Linux (based on xinput_calibrator)
 
 # For build 
 run ./build.sh
