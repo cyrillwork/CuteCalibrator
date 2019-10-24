@@ -44,6 +44,7 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
                                  const XYinfo& axys0,
                                  const Lang lang,
                                  XID device_id,
+                                 XID device_id_multi,
                                  const int thr_misclick,
                                  const int thr_doubleclick,
                                  const OutputType output_type,
@@ -54,6 +55,15 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
                                  const bool small)
   : Calibrator(device_name0, axys0, lang, thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode, small)
 {
+    if(verbose)
+    {
+        std::cout << "device_id = " << device_id << std::endl;
+        if(device_id_multi != (XID)-1)
+        {
+            std::cout << "device_id_multi = " << device_id_multi << std::endl;
+        }
+    }
+
     // init
     display = XOpenDisplay(NULL);
     if (display == NULL) {
@@ -63,18 +73,32 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
     // normaly, we already have the device id
     if (device_id == (XID)-1) {
         devInfo = xinput_find_device_info(display, device_name, False);
-        if (!devInfo) {
+        std::cout << "devInfo = " << devInfo << std::endl;
+        if (!devInfo)
+        {
             XCloseDisplay(display);
             throw WrongCalibratorException("Evdev: Unable to find device");
         }
         device_id = devInfo->id;
     }
 
-    dev = XOpenDevice(display, device_id);
-    if (!dev) {
+    iDev = XOpenDevice(display, device_id);
+    if (!iDev)
+    {
         XCloseDisplay(display);
         throw WrongCalibratorException("Evdev: Unable to open device");
     }
+
+    if( device_id_multi != (XID) -1 )
+    {
+        iDevMulti = XOpenDevice(display, device_id_multi);
+        if (!iDevMulti)
+        {
+            XCloseDisplay(display);
+            throw WrongCalibratorException("Evdev: Unable to open device multi");
+        }
+    }
+
 /*
 #ifndef HAVE_XI_PROP
     throw WrongCalibratorException("Evdev: you need at least libXi 1.2 and inputproto 1.5 for dynamic recalibration of evdev.");
@@ -90,21 +114,20 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
     // get "Evdev Axis Calibration" property
     property = xinput_parse_atom(display, "Evdev Axis Calibration");
 
-    if (XGetDeviceProperty(display, dev, property, 0, 1000, False,
+    if (XGetDeviceProperty(display, iDev, property, 0, 1000, False,
                            AnyPropertyType, &act_type, &act_format,
                            &nitems, &bytes_after, &data) != Success)
     {
-        XCloseDevice(display, dev);
+        XCloseDevice(display, iDev);
         XCloseDisplay(display);
         throw WrongCalibratorException("Evdev: \"Evdev Axis Calibration\" property missing, not a (valid) evdev device");
-
     }
     else
     {
 
         if (act_format != 32 || act_type != XA_INTEGER)
         {
-            XCloseDevice(display, dev);
+            XCloseDevice(display, iDev);
             XCloseDisplay(display);
             throw WrongCalibratorException("Evdev: invalid \"Evdev Axis Calibration\" property format");
 
@@ -160,7 +183,7 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
 
     // get "Evdev Axes Swap" property
     property = xinput_parse_atom(display, "Evdev Axes Swap");
-    if (XGetDeviceProperty(display, dev, property, 0, 1000, False,
+    if (XGetDeviceProperty(display, iDev, property, 0, 1000, False,
                            AnyPropertyType, &act_type, &act_format,
                            &nitems, &bytes_after, &data) == Success)
     {
@@ -175,7 +198,7 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
 
     // get "Evdev Axes Inversion" property
     property = xinput_parse_atom(display, "Evdev Axis Inversion");
-    if (XGetDeviceProperty(display, dev, property, 0, 1000, False,
+    if (XGetDeviceProperty(display, iDev, property, 0, 1000, False,
                 AnyPropertyType, &act_type, &act_format,
                 &nitems, &bytes_after, &data) == Success) {
         if (act_format == 8 && act_type == XA_INTEGER && nitems == 2) {
@@ -224,9 +247,16 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
   : Calibrator(device_name0, axys0, lang, thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode, small) { }
 
 // Destructor
-CalibratorEvdev::~CalibratorEvdev () {
-    XCloseDevice(display, dev);
+CalibratorEvdev::~CalibratorEvdev ()
+{
+    XCloseDevice(display, iDev);
     XCloseDisplay(display);
+
+    if(iDevMulti)
+    {
+        XCloseDevice(display, iDevMulti);
+        XCloseDisplay(display);
+    }
 }
 
 
@@ -247,7 +277,25 @@ void CalibratorEvdev::restore_calibration()
         // get "Evdev Axis Calibration" property
         property = xinput_parse_atom(display, "Evdev Axis Calibration");
 
-        XGetDeviceProperty(display, dev, property, 0, 1000, False,
+        XGetDeviceProperty(display, iDev, property, 0, 1000, False,
+                               AnyPropertyType, &act_type, &act_format,
+                               &nitems, &bytes_after, &data);
+    }
+
+
+    if(iDevMulti)
+    {
+        Atom            property = {};
+        Atom            act_type = {};
+        int             act_format;
+        unsigned long   nitems, bytes_after;
+        unsigned char   *data;
+
+
+        // get "Evdev Axis Calibration" property
+        property = xinput_parse_atom(display, "Evdev Axis Calibration");
+
+        XGetDeviceProperty(display, iDevMulti, property, 0, 1000, False,
                                AnyPropertyType, &act_type, &act_format,
                                &nitems, &bytes_after, &data);
     }
@@ -398,13 +446,25 @@ bool CalibratorEvdev::set_swapxy(const int swap_xy)
     int arr_cmd[1];
     arr_cmd[0] = swap_xy;
 
-    bool ret = xinput_do_set_int_prop("Evdev Axes Swap", display, 8, 1, arr_cmd);
+    bool ret = xinput_do_set_int_prop("Evdev Axes Swap", display, iDev, 8, 1, arr_cmd);
 
     if (verbose) {
         if (ret == true)
             printf("DEBUG: Successfully set swapped X and Y axes = %d.\n", swap_xy);
         else
             printf("DEBUG: Failed to set swap X and Y axes.\n");
+    }
+
+    if(iDevMulti)
+    {
+        bool ret = xinput_do_set_int_prop("Evdev Axes Swap", display, iDevMulti, 8, 1, arr_cmd);
+
+        if (verbose) {
+            if (ret == true)
+                printf("DEBUG: Successfully set swapped X and Y axes = %d. multi dev\n", swap_xy);
+            else
+                printf("DEBUG: Failed to set swap X and Y axes. Multi dev\n");
+        }
     }
 
     return ret;
@@ -419,13 +479,25 @@ bool CalibratorEvdev::set_invert_xy(const int invert_x, const int invert_y)
     arr_cmd[0] = invert_x;
     arr_cmd[1] = invert_y;
 
-    int ret = xinput_do_set_int_prop("Evdev Axis Inversion", display, 8, 2, arr_cmd);
+    int ret = xinput_do_set_int_prop("Evdev Axis Inversion", display, iDev, 8, 2, arr_cmd);
 
     if (verbose) {
         if (ret == true)
             printf("DEBUG: Successfully set invert axis X=%d, Y=%d.\n", invert_x, invert_y);
         else
             printf("DEBUG: Failed to set axis inversion.\n");
+    }
+
+    if(iDevMulti)
+    {
+        int ret = xinput_do_set_int_prop("Evdev Axis Inversion", display, iDevMulti, 8, 2, arr_cmd);
+
+        if (verbose) {
+            if (ret == true)
+                printf("DEBUG: Successfully set invert axis X=%d, Y=%d. Multi dev\n", invert_x, invert_y);
+            else
+                printf("DEBUG: Failed to set axis inversion.Multi dev\n");
+        }
     }
 
     return ret;
@@ -442,7 +514,12 @@ bool CalibratorEvdev::set_calibration(const XYinfo new_axys)
     arr_cmd[2] = new_axys.y.min;
     arr_cmd[3] = new_axys.y.max;
 
-    bool ret = xinput_do_set_int_prop("Evdev Axis Calibration", display, 32, 4, arr_cmd);
+    bool ret = xinput_do_set_int_prop(  "Evdev Axis Calibration",
+                                        display,
+                                        iDev,
+                                        32,
+                                        4,
+                                        arr_cmd);
 
     //printf("!!!!!!!!! ret=%d\n", ret);
 
@@ -452,6 +529,28 @@ bool CalibratorEvdev::set_calibration(const XYinfo new_axys)
         else
             printf("DEBUG: Failed to apply axis calibration.\n");
     }
+
+    if(iDevMulti){
+        bool ret = xinput_do_set_int_prop(  "Evdev Axis Calibration",
+                                            display,
+                                            iDevMulti,
+                                            32,
+                                            4,
+                                            arr_cmd);
+
+        //printf("!!!!!!!!! ret=%d\n", ret);
+
+        if (verbose) {
+            if (ret == true)
+                printf("DEBUG: Successfully applied axis calibration for multi dev.\n");
+            else
+                printf("DEBUG: Failed to apply axis calibration for multi dev.\n");
+        }
+
+    }
+
+
+
 
     return ret;
 }
@@ -498,11 +597,14 @@ Display *display, const char *name, Bool only_extended)
 
     devices = XListInputDevices(display, &num_devices);
 
-    for (loop=0; loop<num_devices; loop++) {
+    for (loop=0; loop<num_devices; loop++)
+    {
         if ((!only_extended || (devices[loop].use >= IsXExtensionDevice)) &&
             ((!is_id && strcmp(devices[loop].name, name) == 0) ||
-             (is_id && devices[loop].id == id))) {
-            if (found) {
+             (is_id && devices[loop].id == id)))
+        {
+            if (found)
+            {
                 fprintf(stderr,
                         "Warning: There are multiple devices named \"%s\".\n"
                         "To ensure the correct one is selected, please use "
@@ -518,8 +620,9 @@ Display *display, const char *name, Bool only_extended)
 }
 
 // Set Integer property on  X
-bool CalibratorEvdev::xinput_do_set_int_prop( const char * name,
+bool CalibratorEvdev::xinput_do_set_int_prop(const char * name,
                                          Display *display,
+                                         XDevice *dev,
                                          int format,
                                          int argc,
                                          const int *argv )
@@ -534,7 +637,8 @@ bool CalibratorEvdev::xinput_do_set_int_prop( const char * name,
     int           old_format;
     unsigned long act_nitems, bytes_after;
 
-    union {
+    union
+    {
         unsigned char *c;
         short *s;
         long *l;
@@ -557,24 +661,28 @@ bool CalibratorEvdev::xinput_do_set_int_prop( const char * name,
         return false;
     }
 
-    if ( format == 0) {
+    if(format == 0)
+    {
         if (XGetDeviceProperty(display, dev, prop, 0, 0, False, AnyPropertyType,
                                &old_type, &old_format, &act_nitems,
                                &bytes_after, &data.c) != Success) {
             fprintf(stderr, "failed to get property type and format for %s\n",
                     name);
             return false;
-        } else {
+        }
+        else
+        {
             format = old_format;
         }
-
         XFree(data.c);
     }
 
     data.c = (unsigned char*)calloc(argc, sizeof(long));
 
-    for (i = 0; i < argc; i++) {
-      switch (format) {
+    for (i = 0; i < argc; i++)
+    {
+      switch (format)
+      {
         case 8:
             data.c[i] = argv[i];
         case 16:
@@ -593,8 +701,8 @@ bool CalibratorEvdev::xinput_do_set_int_prop( const char * name,
                       data.c, argc);
     free(data.c);
     return true;
-//#endif // HAVE_XI_PROP
 
+    //#endif // HAVE_XI_PROP
 }
 
 bool CalibratorEvdev::output_xorgconfd(const XYinfo new_axys)

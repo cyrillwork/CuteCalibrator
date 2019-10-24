@@ -270,7 +270,7 @@ protected:
     bool has_xorgconfd_support(Display* display=NULL);
 
     static int find_device(const char* pre_device, bool list_devices,
-            XID& device_id, const char*& device_name, XYinfo& device_axys);
+            XID& device_id, const char*& device_name, XYinfo& device_axys, XID& device_id_multi);
 
 protected:
     /// Name of the device (driver)

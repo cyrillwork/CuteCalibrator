@@ -36,9 +36,11 @@ class CalibratorEvdev: public Calibrator
 private:
     Display     *display;
     XDeviceInfo *devInfo;
-    XDevice     *dev;
+    XDevice     *iDev;
+    XDevice     *iDevMulti = nullptr;
 
 protected:
+
     // protected constructor: should only be used by subclasses!
     // (pass-through to Calibrator)
     CalibratorEvdev(const char* const device_name,
@@ -54,10 +56,12 @@ protected:
                     const bool small = false);
 
 public:
+
     CalibratorEvdev(const char* const device_name,
                     const XYinfo& axys,
                     const Lang lang,
                     XID device_id=(XID)-1,
+                    XID device_id_multi=(XID)-1,
                     const int thr_misclick=0,
                     const int thr_doubleclick=0,
                     const OutputType output_type=OUTYPE_AUTO,
@@ -82,13 +86,17 @@ public:
 
     // xinput_ functions (from the xinput project)
     Atom xinput_parse_atom(Display *display, const char* name);
+
     XDeviceInfo* xinput_find_device_info(Display *display, const char* name, Bool only_extended);
-    bool xinput_do_set_int_prop( const char * name,
+
+    bool xinput_do_set_int_prop(const char * name,
                                  Display *display,
+                                 XDevice *dev,
                                  int format,
                                  int argc,
                                  const int* argv);
 protected:
+
     bool output_xorgconfd(const XYinfo new_axys);
     bool output_hal(const XYinfo new_axys);
     bool output_xinput(const XYinfo new_axys);
