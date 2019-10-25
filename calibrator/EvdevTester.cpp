@@ -25,10 +25,16 @@
 
 #include <cstdio>
 
-CalibratorEvdevTester::CalibratorEvdevTester(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry)
-  : CalibratorEvdev(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry)
+//CalibratorEvdevTester::CalibratorEvdevTester(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry)
+//  : CalibratorEvdev(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry)
+//{
+//    //printf("Starting test driver\n");
+//}
+
+CalibratorEvdevTester::CalibratorEvdevTester(PtrCalibratorBuilder builder):
+    CalibratorEvdev (builder)
 {
-    //printf("Starting test driver\n");
+
 }
 
 bool CalibratorEvdevTester::finish_data(const XYinfo axis)

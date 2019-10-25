@@ -34,27 +34,33 @@
 // static instances
 bool Calibrator::verbose = false;
 std::string Calibrator::pathResource = "./";
-//"/build/CuteCalibration/";
 const char* Calibrator::SYSFS_INPUT="/sys/class/input";
 const char* Calibrator::SYSFS_DEVNAME="device/name";
 
 
-Calibrator::Calibrator(const char* const device_name0, const XYinfo& axys0, const Lang l,
-    const int thr_misclick, const int thr_doubleclick,
-    const OutputType output_type0, const char* geometry0,
-    const bool use_timeout0, const char* output_filename0, const bool testMode0, const bool s)
-    : device_name(device_name0), testMode(testMode0), lang{l}, small{s},
-    threshold_doubleclick(thr_doubleclick), threshold_misclick(thr_misclick),
-    output_type(output_type0), geometry(geometry0), use_timeout(use_timeout0),
-    output_filename(output_filename0)
+//Calibrator::Calibrator(const char* device_name0, const XYinfo& axys0, const Lang l,
+//    const int thr_misclick, const int thr_doubleclick,
+//    const OutputType output_type0, const char* geometry0,
+//    const bool use_timeout0, const char* output_filename0, const bool testMode0, const bool s)
+//    : device_name(device_name0), testMode(testMode0), lang{l}, small{s},
+//    threshold_doubleclick(thr_doubleclick), threshold_misclick(thr_misclick),
+//    output_type(output_type0),
+//    geometry(geometry0),
+//    use_timeout(use_timeout0),
+//    output_filename(output_filename0)
+//{
+//    old_axys = axys0;
+//    restore_axys = {};
+
+//    clicked.num = 0;
+
+//    //clicked.x(NUM_POINTS);
+//    //clicked.y(NUM_POINTS);
+//}
+
+Calibrator::Calibrator(const PtrCalibratorBuilder builder)
 {
-    old_axys = axys0;
-    restore_axys = {};
-
-    clicked.num = 0;
-
-    //clicked.x(NUM_POINTS);
-    //clicked.y(NUM_POINTS);
+    options = builder;
 }
 
 bool Calibrator::add_click(int x, int y)
@@ -235,15 +241,12 @@ bool Calibrator::finish(int width, int height)
 const char* Calibrator::get_sysfs_name()
 {
     if (is_sysfs_name(device_name))
+    {
         return device_name;
+    }
 
     // TODO: more mechanisms
-
     return NULL;
-}
-
-bool Calibrator::getTestMode() const {
-    return testMode;
 }
 
 bool Calibrator::is_sysfs_name(const char* name) {
@@ -306,16 +309,6 @@ bool Calibrator::has_xorgconfd_support(Display* dpy) {
 const std::string& Calibrator::getPathResource()
 {
     return pathResource;
-}
-
-bool Calibrator::getSmall() const
-{
-    return small;
-}
-
-Lang Calibrator::getLang() const
-{
-    return lang;
 }
 
 bool Calibrator::getVerbose()
@@ -391,14 +384,152 @@ scaleAxis(float Cx, int to_max, int to_min, int from_max, int from_min)
     return X;
 }
 
-CalibratorBuilder* CalibratorBuilder::setThr_misclick(int value)
+
+CalibratorBuilder::CalibratorBuilder(const CalibratorBuilder& builder)
+{
+    device_name = builder.getDevice_name();
+    axys = builder.getAxys();
+    thr_misclick = builder.getThrMisclick();
+    thr_doubleclick = builder.getThrDoubleclick();
+    output_type = builder.getOutput_type();
+    geometry = builder.getGeometry();
+    use_timeout = builder.getUse_timeout();
+    output_filename = builder.getOutput_filename();
+    testMode = builder.getTestMode();
+    lang = builder.getLang();
+    small = builder.getSmall();
+}
+
+CalibratorBuilder* CalibratorBuilder::setThrMisclick(int value)
 {
     this->thr_misclick = value;
     return this;
 }
 
-CalibratorBuilder* CalibratorBuilder::setThr_doubleclick(int value)
+CalibratorBuilder* CalibratorBuilder::setThrDoubleclick(int value)
 {
     this->thr_doubleclick = value;
     return this;
+}
+
+XYinfo CalibratorBuilder::getAxys() const
+{
+    return axys;
+}
+
+CalibratorBuilder* CalibratorBuilder::setAxys(const XYinfo&value)
+{
+    this->axys = value;
+    return this;
+}
+
+const char*CalibratorBuilder::getDevice_name() const
+{
+    return device_name;
+}
+
+OutputType CalibratorBuilder::getOutput_type() const
+{
+    return output_type;
+}
+
+void CalibratorBuilder::setOutput_type(const OutputType&value)
+{
+    output_type = value;
+}
+
+char*CalibratorBuilder::getGeometry() const
+{
+    return geometry;
+}
+
+void CalibratorBuilder::setGeometry(char*value)
+{
+    geometry = value;
+}
+
+bool CalibratorBuilder::getUse_timeout() const
+{
+    return use_timeout;
+}
+
+CalibratorBuilder* CalibratorBuilder::setUse_timeout(bool value)
+{
+    this->use_timeout = value;
+    return this;
+}
+
+char*CalibratorBuilder::getOutput_filename() const
+{
+    return output_filename;
+}
+
+void CalibratorBuilder::setOutput_filename(char*value)
+{
+    output_filename = value;
+}
+
+bool CalibratorBuilder::getTestMode() const
+{
+    return testMode;
+}
+
+void CalibratorBuilder::setTestMode(bool value)
+{
+    testMode = value;
+}
+
+Lang CalibratorBuilder::getLang() const
+{
+    return lang;
+}
+
+void CalibratorBuilder::setLang(const Lang&value)
+{
+    lang = value;
+}
+
+bool CalibratorBuilder::getSmall() const
+{
+    return small;
+}
+
+void CalibratorBuilder::setSmall(bool value)
+{
+    small = value;
+}
+
+void CalibratorBuilder::setDevice_name(const char*value)
+{
+    device_name = value;
+}
+
+XID CalibratorBuilder::getDevice_id() const
+{
+    return device_id;
+}
+
+void CalibratorBuilder::setDevice_id(const XID&value)
+{
+    device_id = value;
+}
+
+XID CalibratorBuilder::getDevice_id_multi() const
+{
+    return device_id_multi;
+}
+
+void CalibratorBuilder::setDevice_id_multi(const XID&value)
+{
+    device_id_multi = value;
+}
+
+int CalibratorBuilder::getThrMisclick() const
+{
+    return thr_misclick;
+}
+
+int CalibratorBuilder::getThrDoubleclick() const
+{
+    return thr_doubleclick;
 }

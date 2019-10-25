@@ -30,7 +30,7 @@ public:
 
     LangKind getLang() const;
 
-    std::string toString();
+    std::string toString() const;
 
 private:
     LangKind lang;

@@ -29,6 +29,7 @@
 #include <X11/Xlib.h>
 #include <stdio.h>
 #include <vector>
+#include <memory>
 
 #include "lang.hh"
 
@@ -134,24 +135,75 @@ class WrongCalibratorException : public std::invalid_argument {
             std::invalid_argument(msg) {}
 };
 
+class CalibratorBuilder;
+using PtrCalibratorBuilder = std::shared_ptr<CalibratorBuilder>;
+
 
 class CalibratorBuilder
 {
 public:
-
    CalibratorBuilder():
        device_name{nullptr},
        thr_misclick{0},
-       thr_doubleclick{0},
+       thr_doubleclick{7},
        output_type{OUTYPE_AUTO},
        geometry{nullptr},
        use_timeout{true},
        output_filename{nullptr},
-       testMode0{false}
+       testMode{false},
+       small{false},
+       device_id((XID)-1),
+       device_id_multi((XID)-1)
    { }
 
+   CalibratorBuilder(const CalibratorBuilder& builder);
+
+
+   CalibratorBuilder* setThrMisclick(int value);
+   int getThrMisclick() const;
+
+   CalibratorBuilder* setThrDoubleclick(int value);
+   int getThrDoubleclick() const;
+
+
+   XYinfo getAxys() const;
+   CalibratorBuilder*setAxys(const XYinfo&value);
+
+   const char *getDevice_name() const;
+
+   OutputType getOutput_type() const;
+   void setOutput_type(const OutputType&value);
+
+   char* getGeometry() const;
+   void setGeometry(char*value);
+
+   bool getUse_timeout() const;
+   CalibratorBuilder* setUse_timeout(bool value);
+
+   char*getOutput_filename() const;
+   void setOutput_filename(char*value);
+
+   bool getTestMode() const;
+   void setTestMode(bool value);
+
+   Lang getLang() const;
+   void setLang(const Lang&value);
+
+   bool getSmall() const;
+   void setSmall(bool value);
+
+   void setDevice_name(const char*value);
+
+
+   XID getDevice_id() const;
+   void setDevice_id(const XID&value);
+
+   XID getDevice_id_multi() const;
+   void setDevice_id_multi(const XID&value);
+
+private:
    /// Name of the device (driver)
-   const char* const device_name;
+   const char* device_name;
    XYinfo axys;
    int thr_misclick;
    int thr_doubleclick;
@@ -159,34 +211,41 @@ public:
    char* geometry;
    bool use_timeout;
    char* output_filename;
-   bool testMode0;
-
-   CalibratorBuilder* setThr_misclick(int value);
-   CalibratorBuilder* setThr_doubleclick(int value);
+   bool testMode;
+   Lang lang;
+   bool small;
+   XID device_id;// != (XID)-1)
+   XID device_id_multi;// != (XID)-1)
 };
+
+class Calibrator;
+using PtrCalibrator = std::shared_ptr<Calibrator>;
 
 /// Base class for calculating new calibration parameters
 class Calibrator
 {
 public:
-    /// Parse arguments and create calibrator
-    static Calibrator* make_calibrator(int argc, char** argv);
-
     /// Constructor
     ///
     /// The constructor will throw an exception,
     /// if the touchscreen is not of the type it supports
-    Calibrator(const char* const device_name,
-               const XYinfo& axys,
-               const Lang lang,
-               const int thr_misclick=0,
-               const int thr_doubleclick=0,
-               const OutputType output_type=OUTYPE_AUTO,
-               const char* geometry=0,
-               const bool use_timeout=1,
-               const char* output_filename = 0,
-               const bool testMode0 = false,
-               const bool small = false);
+//    Calibrator(const char*device_name,
+//               const XYinfo& axys,
+//               const Lang lang,
+//               const int thr_misclick=0,
+//               const int thr_doubleclick=0,
+//               const OutputType output_type=OUTYPE_AUTO,
+//               const char* geometry=0,
+//               const bool use_timeout=1,
+//               const char* output_filename = 0,
+//               const bool testMode0 = false,
+//               const bool small = false);
+
+
+    /// Parse arguments and create calibrator
+    static PtrCalibrator make_calibrator(int argc, char** argv);
+
+    Calibrator(const PtrCalibratorBuilder builder);
 
     virtual ~Calibrator() {}
 
@@ -210,14 +269,8 @@ public:
     int get_Y(int i) const
     { return clicked.y[i]; }
 
-
-
     void  set_numclicks(int numclicks)
     { clicked.num = numclicks; }
-
-    /// return geometry string or NULL
-    const char* get_geometry() const
-    { return geometry; }
 
     /// reset clicks
     void reset()
@@ -236,24 +289,13 @@ public:
     /// returns NULL if it can not be found
     const char* get_sysfs_name();
 
-    bool get_use_timeout() const
-    { return use_timeout; }
-
-    /// get output filename set at cmdline or NULL
-    const char* get_output_filename() const
-    { return output_filename; }
-
-    bool getTestMode() const;
 
     static bool getVerbose();
 
-    static std::string langToString(Lang lang);
-
-    Lang getLang() const;
-
-    bool getSmall() const;
 
     static const std::string & getPathResource();
+
+    std::shared_ptr<CalibratorBuilder> options;
 
 protected:
     /// check whether the coordinates are along the respective axis
@@ -272,9 +314,17 @@ protected:
     static int find_device(const char* pre_device, bool list_devices,
             XID& device_id, const char*& device_name, XYinfo& device_axys, XID& device_id_multi);
 
-protected:
-    /// Name of the device (driver)
-    const char* const device_name;
+
+    /// Clicked values (screen coordinates)
+    struct {
+        /// actual number of clicks registered
+        int num;
+        /// click coordinates
+        std::vector<int> x, y;
+    } clicked;
+
+    /// Be verbose or not
+    static bool verbose;
 
     /// Original values
     XYinfo old_axys;
@@ -282,8 +332,10 @@ protected:
     /// Restore values
     XYinfo restore_axys;
 
-    /// Be verbose or not
-    static bool verbose;
+private:
+
+    /// Name of the device (driver)
+    const char* device_name;
 
     /// Test mode
     bool testMode;
@@ -293,14 +345,6 @@ protected:
 
     //small size
     bool small;
-
-    /// Clicked values (screen coordinates)
-    struct {
-        /// actual number of clicks registered
-        int num;
-        /// click coordinates
-        std::vector<int> x, y;
-    } clicked;
 
     // Threshold to keep the same point from being clicked twice.
     // Set to zero if you don't want this check
@@ -317,7 +361,7 @@ protected:
     // manually specified geometry string
     const char* geometry;
 
-    const bool use_timeout;
+    bool use_timeout;
 
     // manually specified output filename
     const char* output_filename;
@@ -328,6 +372,8 @@ protected:
 
     static std::string pathResource;
 };
+
+
 
 // Interfance for a CalibratorTester
 class CalibratorTesterInterface

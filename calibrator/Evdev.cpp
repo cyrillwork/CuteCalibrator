@@ -40,27 +40,29 @@
 #endif
 
 // Constructor
-CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
-                                 const XYinfo& axys0,
-                                 const Lang lang,
-                                 XID device_id,
-                                 XID device_id_multi,
-                                 const int thr_misclick,
-                                 const int thr_doubleclick,
-                                 const OutputType output_type,
-                                 const char* geometry,
-                                 const bool use_timeout,
-                                 const char* output_filename,
-                                 const bool testMode,
-                                 const bool small)
-  : Calibrator(device_name0, axys0, lang, thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode, small)
+//CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
+//                                 const XYinfo& axys0,
+//                                 const Lang lang,
+//                                 XID device_id,
+//                                 XID device_id_multi,
+//                                 const int thr_misclick,
+//                                 const int thr_doubleclick,
+//                                 const OutputType output_type,
+//                                 const char* geometry,
+//                                 const bool use_timeout,
+//                                 const char* output_filename,
+//                                 const bool testMode,
+//                                 const bool small)
+//  : Calibrator(device_name0, axys0, lang, thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode, small)
+CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
+    Calibrator (options)
 {
     if(verbose)
     {
-        std::cout << "device_id = " << device_id << std::endl;
-        if(device_id_multi != (XID)-1)
+        std::cout << "device_id = " << options->getDevice_id() << std::endl;
+        if(options->getDevice_id_multi() != (XID)-1)
         {
-            std::cout << "device_id_multi = " << device_id_multi << std::endl;
+            std::cout << "device_id_multi = " << options->getDevice_id_multi() << std::endl;
         }
     }
 
@@ -71,27 +73,29 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
     }
 
     // normaly, we already have the device id
-    if (device_id == (XID)-1) {
-        devInfo = xinput_find_device_info(display, device_name, False);
+    if (options->getDevice_id() == (XID)-1)
+    {
+        devInfo = xinput_find_device_info(display, options->getDevice_name(), False);
         std::cout << "devInfo = " << devInfo << std::endl;
         if (!devInfo)
         {
             XCloseDisplay(display);
             throw WrongCalibratorException("Evdev: Unable to find device");
-        }
-        device_id = devInfo->id;
+        }        
+        options->setDevice_id(devInfo->id);
     }
 
-    iDev = XOpenDevice(display, device_id);
+    iDev = XOpenDevice(display, options->getDevice_id());
+
     if (!iDev)
     {
         XCloseDisplay(display);
         throw WrongCalibratorException("Evdev: Unable to open device");
     }
 
-    if( device_id_multi != (XID) -1 )
+    if( options->getDevice_id_multi() != (XID) -1 )
     {
-        iDevMulti = XOpenDevice(display, device_id_multi);
+        iDevMulti = XOpenDevice(display, options->getDevice_id_multi());
         if (!iDevMulti)
         {
             XCloseDisplay(display);
@@ -210,7 +214,7 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
     }
 
 
-    printf("Calibrating EVDEV driver for \"%s\" id=%i\n", device_name, (int)device_id);
+    printf("Calibrating EVDEV driver for \"%s\" id=%i\n", options->getDevice_name(), (int)options->getDevice_id());
 
 /*
     old_axys.x.min = 0;
@@ -232,19 +236,21 @@ CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
 //#endif // HAVE_XI_PROP
 
 }
-// protected pass-through constructor for subclasses
-CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
-                                 const XYinfo& axys0,
-                                 const Lang lang,
-                                 const int thr_misclick,
-                                 const int thr_doubleclick,
-                                 const OutputType output_type,
-                                 const char* geometry,
-                                 const bool use_timeout,
-                                 const char* output_filename,
-                                 const bool testMode,
-                                 const bool small)
-  : Calibrator(device_name0, axys0, lang, thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode, small) { }
+
+
+//// protected pass-through constructor for subclasses
+//CalibratorEvdev::CalibratorEvdev(const char* const device_name0,
+//                                 const XYinfo& axys0,
+//                                 const Lang lang,
+//                                 const int thr_misclick,
+//                                 const int thr_doubleclick,
+//                                 const OutputType output_type,
+//                                 const char* geometry,
+//                                 const bool use_timeout,
+//                                 const char* output_filename,
+//                                 const bool testMode,
+//                                 const bool small)
+//  : Calibrator(device_name0, axys0, lang, thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode, small) { }
 
 // Destructor
 CalibratorEvdev::~CalibratorEvdev ()
@@ -409,7 +415,8 @@ bool CalibratorEvdev::finish_data(const XYinfo new_axys)
     XSync(display, False);
 
     printf("\t--> Making the calibration permanent <--\n");
-    switch (output_type) {
+    switch (options->getOutput_type())
+    {
         case OUTYPE_AUTO:
             // xorg.conf.d or alternatively xinput commands
             if (has_xorgconfd_support())
@@ -712,10 +719,10 @@ bool CalibratorEvdev::output_xorgconfd(const XYinfo new_axys)
     if (not_sysfs_name)
         sysfs_name = "!!Name_Of_TouchScreen!!";
 
-    if(output_filename == NULL || not_sysfs_name)
+    if(options->getOutput_filename() == NULL || not_sysfs_name)
         printf("  copy the snippet below into '/etc/X11/xorg.conf.d/99-calibration.conf' (/usr/share/X11/xorg.conf.d/ in some distro's)\n");
     else
-        printf("  writing xorg.conf calibration data to '%s'\n", output_filename);
+        printf("  writing xorg.conf calibration data to '%s'\n", options->getOutput_filename());
 
     // xorg.conf.d snippet
     char line[MAX_LINE_LEN];
@@ -737,16 +744,19 @@ bool CalibratorEvdev::output_xorgconfd(const XYinfo new_axys)
     if (not_sysfs_name)
         printf("\nChange '%s' to your device's name in the snippet above.\n", sysfs_name);
     // file out
-    else if(output_filename != NULL) {
-        FILE* fid = fopen(output_filename, "w");
-        if (fid == NULL) {
-            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", output_filename);
-            fprintf(stderr, "New calibration data NOT saved\n");
-            return false;
+    else
+        if(options->getOutput_filename() != nullptr)
+        {
+            FILE* fid = fopen(options->getOutput_filename(), "w");
+            if (fid == NULL)
+            {
+                fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", options->getOutput_filename());
+                fprintf(stderr, "New calibration data NOT saved\n");
+                return false;
+            }
+            fprintf(fid, "%s", outstr.c_str());
+            fclose(fid);
         }
-        fprintf(fid, "%s", outstr.c_str());
-        fclose(fid);
-    }
 
     return true;
 }
@@ -758,10 +768,10 @@ bool CalibratorEvdev::output_hal(const XYinfo new_axys)
     if (not_sysfs_name)
         sysfs_name = "!!Name_Of_TouchScreen!!";
 
-    if(output_filename == NULL || not_sysfs_name)
+    if(options->getOutput_filename() == NULL || not_sysfs_name)
         printf("  copy the policy below into '/etc/hal/fdi/policy/touchscreen.fdi'\n");
     else
-        printf("  writing HAL calibration data to '%s'\n", output_filename);
+        printf("  writing HAL calibration data to '%s'\n", options->getOutput_filename());
 
     // HAL policy output
     char line[MAX_LINE_LEN];
@@ -780,10 +790,10 @@ bool CalibratorEvdev::output_hal(const XYinfo new_axys)
     if (not_sysfs_name)
         printf("\nChange '%s' to your device's name in the config above.\n", sysfs_name);
     // file out
-    else if(output_filename != NULL) {
-        FILE* fid = fopen(output_filename, "w");
+    else if(options->getOutput_filename() != NULL) {
+        FILE* fid = fopen(options->getOutput_filename(), "w");
         if (fid == NULL) {
-            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", output_filename);
+            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", options->getOutput_filename());
             fprintf(stderr, "New calibration data NOT saved\n");
             return false;
         }
@@ -796,27 +806,29 @@ bool CalibratorEvdev::output_hal(const XYinfo new_axys)
 
 bool CalibratorEvdev::output_xinput(const XYinfo new_axys)
 {
-    if(output_filename == NULL)
+    if(options->getOutput_filename() == NULL)
         printf("  Install the 'xinput' tool and copy the command(s) below in a script that starts with your X session\n");
     else
-        printf("  writing calibration script to '%s'\n", output_filename);
+        printf("  writing calibration script to '%s'\n", options->getOutput_filename());
 
     // create startup script
     char line[MAX_LINE_LEN];
     std::string outstr;
 
-    sprintf(line, "    xinput set-int-prop \"%s\" \"Evdev Axis Calibration\" 32 %d %d %d %d\n", device_name, new_axys.x.min, new_axys.x.max, new_axys.y.min, new_axys.y.max);
+    sprintf(line, "    xinput set-int-prop \"%s\" \"Evdev Axis Calibration\" 32 %d %d %d %d\n", options->getDevice_name(), new_axys.x.min, new_axys.x.max, new_axys.y.min, new_axys.y.max);
     outstr += line;
-    sprintf(line, "    xinput set-int-prop \"%s\" \"Evdev Axes Swap\" 8 %d\n", device_name, new_axys.swap_xy);
+    sprintf(line, "    xinput set-int-prop \"%s\" \"Evdev Axes Swap\" 8 %d\n", options->getDevice_name(), new_axys.swap_xy);
     outstr += line;
 
     // console out
     printf("%s", outstr.c_str());
     // file out
-    if(output_filename != NULL) {
-		FILE* fid = fopen(output_filename, "w");
-		if (fid == NULL) {
-			fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", output_filename);
+    if(options->getOutput_filename() != NULL)
+    {
+        FILE* fid = fopen(options->getOutput_filename(), "w");
+        if (fid == NULL)
+        {
+            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", options->getOutput_filename());
 			fprintf(stderr, "New calibration data NOT saved\n");
 			return false;
 		}

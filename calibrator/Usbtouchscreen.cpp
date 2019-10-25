@@ -48,10 +48,13 @@ static const char *p_flip_x = "flip_x";
 static const char *p_flip_y = "flip_y";
 static const char *p_swap_xy = "swap_xy";
 
-CalibratorUsbtouchscreen::CalibratorUsbtouchscreen(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry, const bool use_timeout, const char* output_filename, const bool testMode)
-  : Calibrator(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode)
+//CalibratorUsbtouchscreen::CalibratorUsbtouchscreen(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry, const bool use_timeout, const char* output_filename, const bool testMode)
+//  : Calibrator(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode)
+
+CalibratorUsbtouchscreen::CalibratorUsbtouchscreen(PtrCalibratorBuilder builder):
+    Calibrator (builder)
 {
-    if (strcmp(device_name, "Usbtouchscreen") != 0)
+    if (strcmp(options->getDevice_name(), "Usbtouchscreen") != 0)
         throw WrongCalibratorException("Not a usbtouchscreen device");
 
     // Reset the currently running kernel
@@ -79,7 +82,7 @@ CalibratorUsbtouchscreen::~CalibratorUsbtouchscreen()
 
 bool CalibratorUsbtouchscreen::finish_data(const XYinfo new_axys)
 {
-    if (output_type != OUTYPE_AUTO) {
+    if (options->getOutput_type() != OUTYPE_AUTO) {
         fprintf(stderr, "ERROR: Usbtouchscreen Calibrator does not support the supplied --output-type\n");
         return false;
     }
@@ -105,7 +108,7 @@ bool CalibratorUsbtouchscreen::finish_data(const XYinfo new_axys)
 
     // Read, then write calibration parameters to modprobe_conf_local,
     // or the file set by --output-filename to keep the for the next boot
-    const char* filename = output_filename == NULL ? modprobe_conf_local : output_filename;
+    const char* filename = options->getOutput_filename() == NULL ? modprobe_conf_local : options->getOutput_filename();
     FILE *fid = fopen(filename, "r");
     if (fid == NULL) {
         fprintf(stderr, "Error: Can't open '%s' for reading. Make sure you have the necessary rights\n", filename);

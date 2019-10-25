@@ -31,9 +31,9 @@
 #include <fstream>
 
 
-void get_display_texts_default(std::vector<std::string> *texts, Calibrator *calibrator)
+void get_display_texts_default(std::vector<std::string> *texts, const Lang& lang)
 {
-	switch(calibrator->getLang().getLang())
+	switch(lang.getLang())
 	{
 		case LangKind::fr:
 		{
@@ -64,7 +64,7 @@ void get_display_texts_default(std::vector<std::string> *texts, Calibrator *cali
 	}
 }
 
-void get_display_texts_testmode(std::list<std::string> *texts, Calibrator *calibrator)
+void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator /*calibrator*/)
 {
     std::string str;
     /* 1st line */
@@ -85,17 +85,12 @@ void get_display_texts_testmode(std::list<std::string> *texts, Calibrator *calib
     str = "";
     texts->push_back(str);
     /* 4th line */
-    str = "(To abort, press any key";
-    if(calibrator->get_use_timeout())
-        str += " or wait)";
-    else
-        str += ")";
-    texts->push_back(str);
+    texts->push_back("(To abort, press any key)");
 }
 
 using namespace rapidjson;
 
-bool get_display_texts_json(std::vector<std::string>* texts, Calibrator *calibrator)
+bool get_display_texts_json(std::vector<std::string>* texts, const Lang& lang)
 {
     bool result = false;
 
@@ -110,7 +105,7 @@ bool get_display_texts_json(std::vector<std::string>* texts, Calibrator *calibra
         {
             //std::cout << "Element name=" << it->name.GetString() << std::endl;
             std::string node(it->name.GetString());
-            if(node == calibrator->getLang().toString())
+            if(node == lang.toString())
             {
                 //std::cout << "node=" << node << std::endl;
                 const auto &doc = it->value;

@@ -168,11 +168,10 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
         for (int j=0; j<list->num_classes; j++)
         {
 
-            if (any->c_class == ValuatorClass)
-//                    && (
-//                            (list->type == 112)     // TouchScreen
-//                        /*||  (list->type == 109)*/ // Keyboard
-//                        )
+            if ((any->c_class == ValuatorClass) && (
+                            (list->type == 112)     // TouchScreen
+                        /*||  (list->type == 109)*/ // Keyboard
+                        ))
 
             {
                 XValuatorInfoPtr V = (XValuatorInfoPtr) any;
@@ -268,24 +267,27 @@ static void usage(char* cmd, unsigned thr_misclick)
     fprintf(stderr, "\t--path <resource path>: set resource path\n");
 }
 
-Calibrator* Calibrator::make_calibrator(int argc, char** argv)
+PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
 {
     bool list_devices = false;
+
     bool fake = false;
     bool precalib = false;
-    bool use_timeout = true;
-    bool testMode = false;
-    bool small = false;
-
-    Lang lang;
+    //bool use_timeout = true;
+    //bool testMode = false;
+    //bool small = false;
+    //Lang lang;
 
     XYinfo pre_axys;
     const char* pre_device = nullptr;
-    const char* geometry = nullptr;
+    //const char* geometry = nullptr;
     const char* output_filename = nullptr;
-    unsigned thr_misclick = 0;
-    unsigned thr_doubleclick = 7;
-    OutputType output_type = OUTYPE_AUTO;
+    //unsigned thr_misclick = 0;
+    //unsigned thr_doubleclick = 7;
+    //OutputType output_type = OUTYPE_AUTO;
+
+    std::shared_ptr<CalibratorBuilder> builder = std::make_shared<CalibratorBuilder>();
+
 
     // parse input
     if (argc > 1)
@@ -296,10 +298,10 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
             if (strcmp("-h", argv[i]) == 0 ||
                 strcmp("--help", argv[i]) == 0) {
                 fprintf(stderr, "xinput_calibrator, v%s\n\n", VERSION);
-                usage(argv[0], thr_misclick);
+                usage(argv[0], builder->getThrMisclick());
                 exit(0);
-            } else
-
+            }
+            else
             // Verbose output ?
             if (strcmp("-v", argv[i]) == 0 ||
                 strcmp("--verbose", argv[i]) == 0) {
@@ -308,12 +310,12 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
 
             //  Test mode
             if (strcmp("--testmode", argv[i]) == 0) {
-                testMode = true;
+                builder->setTestMode(true);
             } else            
             //  small
             if (strcmp("--small", argv[i]) == 0)
             {
-                small = true;
+                builder->setSmall(true);
             } else
             //  resource path
             if (strcmp("--path", argv[i]) == 0)
@@ -323,27 +325,32 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
             if (strcmp("--lang", argv[i]) == 0)
             {
                 //std::cout << "argv[i] " << argv[i] << std::endl;
-                lang.setLang(argv[++i]);
+                Lang lang(argv[++i]);
                 //std::cout << "get lang " << lang << std::endl;
+                builder->setLang(lang);
             } else
             // Just list devices ?
-            if (strcmp("--list", argv[i]) == 0) {
+            if (strcmp("--list", argv[i]) == 0)
+            {
                 list_devices = true;
-            } else
-
+            }
+            else
             // Select specific device ?
-            if (strcmp("--device", argv[i]) == 0) {
+            if (strcmp("--device", argv[i]) == 0)
+            {
                 if (argc > i+1)
                     pre_device = argv[++i];
-                else {
+                else
+                {
                     fprintf(stderr, "Error: --device needs a device name or id as argument; use --list to list the calibratable input devices.\n\n");
-                    usage(argv[0], thr_misclick);
+                    usage(argv[0], builder->getThrMisclick());
                     exit(1);
                 }
-            } else
-
+            }
+            else
             // Get pre-calibration ?
-            if (strcmp("--precalib", argv[i]) == 0) {
+            if (strcmp("--precalib", argv[i]) == 0)
+            {
                 precalib = true;
                 if (argc > i+1)
                     pre_axys.x.min = atoi(argv[++i]);
@@ -353,15 +360,19 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
                     pre_axys.y.min = atoi(argv[++i]);
                 if (argc > i+1)
                     pre_axys.y.max = atoi(argv[++i]);
-            } else
-
+            }
+            else
             // Get mis-click threshold ?
-            if (strcmp("--misclick", argv[i]) == 0) {
+            if (strcmp("--misclick", argv[i]) == 0)
+            {
                 if (argc > i+1)
-                    thr_misclick = atoi(argv[++i]);
-                else {
+                {
+                    builder->setThrMisclick(atoi(argv[++i]));
+                }
+                else
+                {
                     fprintf(stderr, "Error: --misclick needs a number (the pixel threshold) as argument. Set to 0 to disable mis-click detection.\n\n");
-                    usage(argv[0], thr_misclick);
+                    usage(argv[0], builder->getThrMisclick());
                     exit(1);
                 }
             }
@@ -371,6 +382,7 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
             {
                 if (argc > i+1)
                 {
+                    OutputType output_type = OUTYPE_AUTO;
                     i++; // eat it or exit
                     if (strcmp("auto", argv[i]) == 0)
                         output_type = OUTYPE_AUTO;
@@ -382,52 +394,54 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
                         output_type = OUTYPE_XINPUT;
                     else {
                         fprintf(stderr, "Error: --output-type needs one of auto|xorg.conf.d|hal|xinput.\n\n");
-                        usage(argv[0], thr_misclick);
+                        usage(argv[0], builder->getThrMisclick());
                         exit(1);
                     }
+                    builder->setOutput_type(output_type);
                 }
                 else
                 {
                     fprintf(stderr, "Error: --output-type needs one argument.\n\n");
-                    usage(argv[0], thr_misclick);
+                    usage(argv[0], builder->getThrMisclick());
                     exit(1);
                 }
             } else
             // specify window geometry?
-            if (strcmp("--version", argv[i]) == 0) {
+            if (strcmp("--version", argv[i]) == 0)
+            {
                 printf("version %s\n", VERSION);
                 exit(0);
             } else
             // specify window geometry?
-            if (strcmp("--geometry", argv[i]) == 0) {
-                geometry = argv[++i];
+            if (strcmp("--geometry", argv[i]) == 0)
+            {
+                builder->setGeometry(argv[++i]);
             } else
             // Fake calibratable device ?
-            if (strcmp("--fake", argv[i]) == 0) {
+            if (strcmp("--fake", argv[i]) == 0)
+            {
                 fake = true;
             } else
             // Disable timeout
-			if (strcmp("--no-timeout", argv[i]) == 0) {
-				use_timeout = false;
+            if (strcmp("--no-timeout", argv[i]) == 0)
+            {
+                builder->setUse_timeout(false);
 			} else
 
 			// Output file
 			if (strcmp("--output-filename", argv[i]) == 0) {
 				output_filename = argv[++i];
 			}
-
             // unknown option
-            else {
+            else
+            {
                 fprintf(stderr, "Unknown option: %s\n\n", argv[i]);
-                usage(argv[0], thr_misclick);
+                usage(argv[0], builder->getThrMisclick());
                 exit(0);
             }
         }
     }
 
-    /// Choose the device to calibrate
-    XID         device_id           = (XID) -1;
-    XID         device_id_multi     = (XID) -1;
 
     const char* device_name = nullptr;
     XYinfo      device_axys;
@@ -442,9 +456,14 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
         {
             printf("DEBUG: Faking device: %s\n", device_name);
         }
+
     }
     else
     {
+        /// Choose the device to calibrate
+        XID         device_id           = (XID) -1;
+        XID         device_id_multi     = (XID) -1;
+
         // Find the right device
         int nr_found = find_device(pre_device, list_devices, device_id, device_name, device_axys, device_id_multi);
 
@@ -476,10 +495,15 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
         {
             printf("DEBUG: Selected device: %s\n", device_name);
         }
+
+        builder->setDevice_name(device_name);
+        builder->setDevice_id(device_id);
+        builder->setDevice_id_multi(device_id_multi);
     }
 
     // override min/max XY from command line ?
-    if (precalib) {
+    if (precalib)
+    {
         if (pre_axys.x.min != -1)
             device_axys.x.min = pre_axys.x.min;
         if (pre_axys.x.max != -1)
@@ -489,43 +513,48 @@ Calibrator* Calibrator::make_calibrator(int argc, char** argv)
         if (pre_axys.y.max != -1)
             device_axys.y.max = pre_axys.y.max;
 
-        if (verbose) {
+        if (verbose)
+        {
             printf("DEBUG: Setting precalibration: %i, %i, %i, %i\n",
                 device_axys.x.min, device_axys.x.max,
                 device_axys.y.min, device_axys.y.max);
         }
+
+        builder->setAxys(pre_axys);
     }
 
 
     // Different device/driver, different ways to apply the calibration values
+//    try
+//    {
+//        // try Usbtouchscreen driver
+//        return new CalibratorUsbtouchscreen(device_name, device_axys,
+//            thr_misclick, thr_doubleclick, output_type, geometry,
+//            use_timeout, output_filename, testMode);
+
+//    }
+//    catch(WrongCalibratorException& x)
+//    {
+//        if (verbose)
+//            printf("DEBUG: Not usbtouchscreen calibrator: %s\n", x.what());
+//    }
+
     try
     {
-        // try Usbtouchscreen driver
-        return new CalibratorUsbtouchscreen(device_name, device_axys,
-            thr_misclick, thr_doubleclick, output_type, geometry,
-            use_timeout, output_filename, testMode);
+        // next, try Evdev driver (with XID)
+//        return new CalibratorEvdev(device_name, device_axys, lang, device_id, device_id_multi,
+//            thr_misclick, thr_doubleclick, output_type, geometry,
+//            use_timeout, output_filename, testMode, small);
+
+        return std::make_shared<CalibratorEvdev>(builder);
 
     }
     catch(WrongCalibratorException& x)
     {
         if (verbose)
-            printf("DEBUG: Not usbtouchscreen calibrator: %s\n", x.what());
-    }
-
-    try
-    {
-        // next, try Evdev driver (with XID)
-        return new CalibratorEvdev(device_name, device_axys, lang, device_id, device_id_multi,
-            thr_misclick, thr_doubleclick, output_type, geometry,
-            use_timeout, output_filename, testMode, small);
-
-    } catch(WrongCalibratorException& x) {
-        if (verbose)
             printf("DEBUG: Not evdev calibrator: %s\n", x.what());
     }
 
     // lastly, presume a standard Xorg driver (evtouch, mutouch, ...)
-    return new CalibratorXorgPrint(device_name, device_axys,
-            thr_misclick, thr_doubleclick, output_type, geometry,
-            use_timeout, output_filename, testMode);
+    return std::make_shared<CalibratorXorgPrint>(builder);
 }

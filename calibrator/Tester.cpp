@@ -24,8 +24,11 @@
 
 #include <cstdio>
 
-CalibratorTester::CalibratorTester(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry)
-  : Calibrator(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry)
+//CalibratorTester::CalibratorTester(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry)
+//  : Calibrator(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry)
+
+CalibratorTester::CalibratorTester(PtrCalibratorBuilder builder)  :
+    Calibrator (builder)
 {
     //printf("Starting test driver\n");
 }

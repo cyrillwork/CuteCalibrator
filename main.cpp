@@ -28,13 +28,14 @@
 
 #include "calibrator.hh"
 #include "gui/gtkmm.hpp"
-
 #include <iostream>
 #include <thread>
 
 int main(int argc, char** argv)
-{
-    Calibrator* calibrator = Calibrator::make_calibrator(argc, argv);
+{    
+    std::cout << "Cute calibration"  << std::endl;
+
+    auto calibrator = Calibrator::make_calibrator(argc, argv);
 
     //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
@@ -44,28 +45,32 @@ int main(int argc, char** argv)
     Glib::RefPtr< Gdk::Screen > screen = Gdk::Screen::get_default();
 
     //int num_monitors = screen->get_n_monitors(); TODO, multiple monitors?
-    Gdk::Color back_color;
-    back_color.set_rgb_p(1.0, 0.0, 0.0);
-
+    //Gdk::Color back_color;
+    //back_color.set_rgb_p(1.0, 0.0, 0.0);
 
     Gtk::Window win(Gtk::WindowType::WINDOW_POPUP);
-
     // in case of window manager: set as full screen to hide window decorations
-    if(!calibrator->get_geometry())
+    if(!calibrator->options->getGeometry())
     {
         Gdk::Rectangle rect;
+
         screen->get_monitor_geometry(0, rect);
+
+        if(Calibrator::getVerbose())
+        {
+            std::cout << "Width=" << rect.get_width() << std::endl;
+            std::cout << "Height=" << rect.get_height() << std::endl;
+        }
 
         // when no window manager: explicitely take size of full screen
         win.move(rect.get_x(), rect.get_y());
         win.resize(rect.get_width(), rect.get_height());
 
-
         win.fullscreen();
     }
     else
     {
-        std::string str1(calibrator->get_geometry());
+        std::string str1( calibrator->options->getGeometry() );
 
         int pos = str1.find_first_of("x");
         if(pos != -1)
@@ -93,23 +98,16 @@ int main(int argc, char** argv)
     //win.set_keep_above(false);
     //win.set_keep_below();
     win.set_keep_above();
+
     //win.gtk_style_set_background();
-
-    win.modify_bg(Gtk::STATE_NORMAL, back_color);
-
-    //GtkWindow *gtk_win = win.gobj();
-    //win.set_modal();
-    //win.set_decorated(false);
+    //win.modify_bg(Gtk::STATE_NORMAL, back_color);
 
     CalibrationArea area(calibrator);
     win.add(area);
     area.show();
 
     Gtk::Main::run(win);
-
     Gtk::Main::quit();
-
-    delete calibrator;
 
     return 0;
 }

@@ -24,22 +24,26 @@
 
 #include <cstdio>
 
-CalibratorXorgPrint::CalibratorXorgPrint(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry, const bool use_timeout, const char* output_filename, const bool testMode)
-  : Calibrator(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode)
+//CalibratorXorgPrint::CalibratorXorgPrint(const char* const device_name0, const XYinfo& axys0, const int thr_misclick, const int thr_doubleclick, const OutputType output_type, const char* geometry, const bool use_timeout, const char* output_filename, const bool testMode)
+//  : Calibrator(device_name0, axys0, Lang(), thr_misclick, thr_doubleclick, output_type, geometry, use_timeout, output_filename, testMode)
+//{
+//    printf("Calibrating standard Xorg driver \"%s\"\n", device_name);
+//    printf("\tcurrent calibration values: min_x=%d, max_x=%d and min_y=%d, max_y=%d\n",
+//                old_axys.x.min, old_axys.x.max, old_axys.y.min, old_axys.y.max);
+//    printf("\tIf these values are estimated wrong, either supply it manually with the --precalib option, or run the 'get_precalib.sh' script to automatically get it (through HAL).\n");
+//}
+
+CalibratorXorgPrint::CalibratorXorgPrint(std::shared_ptr<CalibratorBuilder> options):
+    Calibrator (options)
 {
-    printf("Calibrating standard Xorg driver \"%s\"\n", device_name);
-    printf("\tcurrent calibration values: min_x=%d, max_x=%d and min_y=%d, max_y=%d\n",
-                old_axys.x.min, old_axys.x.max, old_axys.y.min, old_axys.y.max);
-    printf("\tIf these values are estimated wrong, either supply it manually with the --precalib option, or run the 'get_precalib.sh' script to automatically get it (through HAL).\n");
 }
 
 bool CalibratorXorgPrint::finish_data(const XYinfo new_axys)
 {
     bool success = true;
 
-
     printf("\t--> Making the calibration permanent <--\n");
-    switch (output_type) {
+    switch (options->getOutput_type()) {
         case OUTYPE_AUTO:
             // xorg.conf.d or alternatively hal config
             if (has_xorgconfd_support()) {
@@ -69,10 +73,10 @@ bool CalibratorXorgPrint::output_xorgconfd(const XYinfo new_axys)
     if (not_sysfs_name)
         sysfs_name = "!!Name_Of_TouchScreen!!";
 
-    if(output_filename == NULL || not_sysfs_name)
+    if(options->getOutput_filename() == NULL || not_sysfs_name)
         printf("  copy the snippet below into '/etc/X11/xorg.conf.d/99-calibration.conf' (/usr/share/X11/xorg.conf.d/ in some distro's)\n");
     else
-        printf("  writing calibration script to '%s'\n", output_filename);
+        printf("  writing calibration script to '%s'\n", options->getOutput_filename());
 
     // xorg.conf.d snippet
     char line[MAX_LINE_LEN];
@@ -103,16 +107,19 @@ bool CalibratorXorgPrint::output_xorgconfd(const XYinfo new_axys)
     if (not_sysfs_name)
         printf("\nChange '%s' to your device's name in the config above.\n", sysfs_name);
     // file out
-    else if(output_filename != NULL) {
-        FILE* fid = fopen(output_filename, "w");
-        if (fid == NULL) {
-            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", output_filename);
-            fprintf(stderr, "New calibration data NOT saved\n");
-            return false;
+    else
+        if(options->getOutput_filename() != NULL)
+        {
+            FILE* fid = fopen(options->getOutput_filename(), "w");
+            if (fid == NULL)
+            {
+                fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", options->getOutput_filename());
+                fprintf(stderr, "New calibration data NOT saved\n");
+                return false;
+            }
+            fprintf(fid, "%s", outstr.c_str());
+            fclose(fid);
         }
-        fprintf(fid, "%s", outstr.c_str());
-        fclose(fid);
-    }
 
     return true;
 }
@@ -124,10 +131,10 @@ bool CalibratorXorgPrint::output_hal(const XYinfo new_axys)
     if (not_sysfs_name)
         sysfs_name = "!!Name_Of_TouchScreen!!";
 
-    if(output_filename == NULL || not_sysfs_name)
+    if(options->getOutput_filename() == NULL || not_sysfs_name)
         printf("  copy the policy below into '/etc/hal/fdi/policy/touchscreen.fdi'\n");
     else
-        printf("  writing HAL calibration data to '%s'\n", output_filename);
+        printf("  writing HAL calibration data to '%s'\n", options->getOutput_filename());
 
     // HAL policy output
     char line[MAX_LINE_LEN];
@@ -156,10 +163,13 @@ bool CalibratorXorgPrint::output_hal(const XYinfo new_axys)
     if (not_sysfs_name)
         printf("\nChange '%s' to your device's name in the config above.\n", sysfs_name);
     // file out
-    else if(output_filename != NULL) {
-        FILE* fid = fopen(output_filename, "w");
-        if (fid == NULL) {
-            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", output_filename);
+    else
+    if(options->getOutput_filename() != NULL)
+    {
+        FILE* fid = fopen(options->getOutput_filename(), "w");
+        if (fid == NULL)
+        {
+            fprintf(stderr, "Error: Can't open '%s' for writing. Make sure you have the necessary rights\n", options->getOutput_filename());
             fprintf(stderr, "New calibration data NOT saved\n");
             return false;
         }

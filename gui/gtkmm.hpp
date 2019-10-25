@@ -53,7 +53,7 @@ class CalibrationArea : public Gtk::DrawingArea
 {
 public:
 
-    CalibrationArea(Calibrator* w);
+    CalibrationArea(PtrCalibrator w);
 
 protected:
 
@@ -65,7 +65,8 @@ protected:
     };
 
     // Data
-    Calibrator* calibrator;
+    std::shared_ptr<Calibrator> calibrator;
+
     double X[4], Y[4];
     int display_width, display_height;
     int time_elapsed;

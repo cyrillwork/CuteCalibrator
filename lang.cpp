@@ -51,7 +51,7 @@ LangKind Lang::getLang() const
     return lang;
 }
 
-std::string Lang::toString()
+std::string Lang::toString() const
 {
     switch (lang) {
         case LangKind::en:

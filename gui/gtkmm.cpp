@@ -31,14 +31,13 @@
 #define MAX_LEFT        69
 #define MOVE_STEP       2
 
-
-CalibrationArea::CalibrationArea(Calibrator* calibrator0)
+CalibrationArea::CalibrationArea(PtrCalibrator calibrator0)
   : calibrator(calibrator0), time_elapsed(0), message(NULL)
 {
-    if(!get_display_texts_json(&display_texts, calibrator0))
+    if(!get_display_texts_json(&display_texts,  calibrator->options->getLang()))
     {
         // setup strings
-        get_display_texts_default(&display_texts, calibrator0);
+        get_display_texts_default(&display_texts, calibrator->options->getLang());
     }
 
     // Listen for mouse events
@@ -46,24 +45,32 @@ CalibrationArea::CalibrationArea(Calibrator* calibrator0)
     set_flags(Gtk::CAN_FOCUS);
 
     // parse geometry string
-    const char* geo = calibrator->get_geometry();
+    const char* geo = calibrator->options->getGeometry();
     if (geo != NULL)
     {
         int gw,gh;
         int res = sscanf(geo,"%dx%d",&gw,&gh);
-        if (res != 2) {
+        if (res != 2)
+        {
             fprintf(stderr,"Warning: error parsing geometry string - using defaults.\n");
             geo = NULL;
-        } else {
+        }
+        else
+        {
             set_display_size( gw, gh );
         }
     }
 
     if (geo == NULL)
-        set_display_size(get_width(), get_height());
+    {
+        int width = get_width();
+        int height = get_height();
+        set_display_size(width, height);
+    }
 
     // Setup timer for animation
-    if(calibrator->get_use_timeout()){
+    if(calibrator->options->getUse_timeout())
+    {
         sigc::slot<bool> slot = sigc::mem_fun(*this, &CalibrationArea::on_timer_signal);
         Glib::signal_timeout().connect(slot, time_step);
     }
@@ -79,7 +86,7 @@ CalibrationArea::CalibrationArea(Calibrator* calibrator0)
     }
 
 
-    if(calibrator0->getSmall())
+    if(calibrator->options->getSmall())
     {
        fontSize      = smallFontSize;
        interLines    = smallInterLines;
@@ -121,7 +128,7 @@ void CalibrationArea::set_display_size(int width, int height) {
 bool CalibrationArea::on_expose_event(GdkEventExpose *event)
 {
     // check that screensize did not change (if no manually specified geometry)
-    if (calibrator->get_geometry() == NULL &&
+    if (calibrator->options->getGeometry() == NULL &&
          (display_width != get_width() ||
          display_height != get_height()) ) {
         set_display_size(get_width(), get_height());
@@ -382,7 +389,7 @@ void CalibrationArea::redraw()
 
 bool CalibrationArea::on_timer_signal()
 {
-    if (calibrator->get_use_timeout())
+    if (calibrator->options->getUse_timeout())
     {
         time_elapsed += time_step;
         if (time_elapsed > max_time)

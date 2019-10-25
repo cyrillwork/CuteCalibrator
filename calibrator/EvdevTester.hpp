@@ -37,9 +37,11 @@ protected:
     XYinfo new_axis;
 
 public:
-    CalibratorEvdevTester(const char* const device_name, const XYinfo& axys,
-        const int thr_misclick=0, const int thr_doubleclick=0,
-        const OutputType output_type=OUTYPE_AUTO, const char* geometry=0);
+//    CalibratorEvdevTester(const char* const device_name, const XYinfo& axys,
+//        const int thr_misclick=0, const int thr_doubleclick=0,
+//        const OutputType output_type=OUTYPE_AUTO, const char* geometry=0);
+
+    CalibratorEvdevTester(PtrCalibratorBuilder builder);
 
     virtual bool finish_data(const XYinfo new_axis);
 

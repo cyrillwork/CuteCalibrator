@@ -42,10 +42,10 @@ const int defaultBoarderWidth  = 3;
 //const int bigBoarderWidth      = 6;
 
 
-void get_display_texts_default(std::vector<std::string> *texts, Calibrator *calibrator);
+void get_display_texts_default(std::vector<std::string> *texts, const Lang &lang);
 
-bool get_display_texts_json(std::vector<std::string> *texts, Calibrator *calibrator);
+bool get_display_texts_json(std::vector<std::string> *texts, const Lang &lang);
 
-void get_display_texts_testmode(std::list<std::string> *texts, Calibrator *calibrator);
+void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator calibrator);
 
 #endif
