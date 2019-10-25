@@ -26,18 +26,16 @@
 #define _calibrator_hh
 
 #include <stdexcept>
-#include <X11/Xlib.h>
 #include <stdio.h>
 #include <vector>
 #include <memory>
 
-#include "lang.hh"
+#include "calibratorbuilder.hh"
+
 
 // XXX: we currently don't handle lines that are longer than this
 #define MAX_LINE_LEN 1024
 
-int xf86ScaleAxis(int Cx, int to_max, int to_min, int from_max, int from_min);
-float scaleAxis(float Cx, int to_max, int to_min, int from_max, int from_min);
 
 /*
  * Number of blocks. We partition the screen into 'num_blocks' x 'num_blocks'
@@ -67,49 +65,6 @@ float scaleAxis(float Cx, int to_max, int to_min, int from_max, int from_min);
  */
 const int num_blocks = 8;
 
-struct AxisInfo {
-    int min, max;
-    bool invert;
-
-    AxisInfo() : min(-1), max(-1), invert(false) { }
-    AxisInfo(int mi, int ma, bool inv = false) :
-        min(mi), max(ma), invert(inv) { }
-    AxisInfo(const AxisInfo& old) :
-        min(old.min), max(old.max), invert(old.invert) { }
-
-    void do_invert() {
-        invert = !invert;
-    }
-};
-
-/// struct to hold min/max info of the X and Y axis
-struct XYinfo {
-    /// Axis swapped
-    bool swap_xy;
-    /// X, Y axis
-    AxisInfo x, y;
-
-    XYinfo() : swap_xy(false) {}
-
-    XYinfo(int xmi, int xma, int ymi, int yma, bool swap_xy_ = false,
-        bool inv_x = false, bool inv_y = false) :
-        swap_xy(swap_xy_), x(xmi, xma, inv_x), y(ymi, yma, inv_y) {}
-
-    XYinfo(const XYinfo& old) :
-        swap_xy(old.swap_xy), x(old.x), y(old.y) {}
-
-    void do_xf86ScaleAxis(const XYinfo& to, const XYinfo& from) {
-        x.min = xf86ScaleAxis(x.min, to.x.max, to.x.min, from.x.max, from.x.min);
-        x.max = xf86ScaleAxis(x.max, to.x.max, to.x.min, from.x.max, from.x.min);
-        y.min = xf86ScaleAxis(y.min, to.y.max, to.y.min, from.y.max, from.y.min);
-        y.max = xf86ScaleAxis(y.max, to.y.max, to.y.min, from.y.max, from.y.min);
-    }
-
-    void print(const char* xtra="\n") {
-        printf("XYinfo: x.min=%i, x.max=%i, y.min=%i, y.max=%i, swap_xy=%i, invert_x=%i, invert_y=%i%s",
-               x.min, x.max, y.min, y.max, swap_xy, x.invert, y.invert, xtra);
-    }
-};
 
 /// Names of the points
 enum {
@@ -120,13 +75,6 @@ enum {
     NUM_POINTS
 };
 
-/// Output types
-enum OutputType {
-    OUTYPE_AUTO,
-    OUTYPE_XORGCONFD,
-    OUTYPE_HAL,
-    OUTYPE_XINPUT
-};
 
 
 class WrongCalibratorException : public std::invalid_argument {
@@ -135,88 +83,6 @@ class WrongCalibratorException : public std::invalid_argument {
             std::invalid_argument(msg) {}
 };
 
-class CalibratorBuilder;
-using PtrCalibratorBuilder = std::shared_ptr<CalibratorBuilder>;
-
-
-class CalibratorBuilder
-{
-public:
-   CalibratorBuilder():
-       device_name{nullptr},
-       thr_misclick{0},
-       thr_doubleclick{7},
-       output_type{OUTYPE_AUTO},
-       geometry{nullptr},
-       use_timeout{true},
-       output_filename{nullptr},
-       testMode{false},
-       small{false},
-       device_id((XID)-1),
-       device_id_multi((XID)-1)
-   { }
-
-   CalibratorBuilder(const CalibratorBuilder& builder);
-
-
-   CalibratorBuilder* setThrMisclick(int value);
-   int getThrMisclick() const;
-
-   CalibratorBuilder* setThrDoubleclick(int value);
-   int getThrDoubleclick() const;
-
-
-   XYinfo getAxys() const;
-   CalibratorBuilder*setAxys(const XYinfo&value);
-
-   const char *getDevice_name() const;
-
-   OutputType getOutput_type() const;
-   void setOutput_type(const OutputType&value);
-
-   char* getGeometry() const;
-   void setGeometry(char*value);
-
-   bool getUse_timeout() const;
-   CalibratorBuilder* setUse_timeout(bool value);
-
-   char*getOutput_filename() const;
-   void setOutput_filename(char*value);
-
-   bool getTestMode() const;
-   void setTestMode(bool value);
-
-   Lang getLang() const;
-   void setLang(const Lang&value);
-
-   bool getSmall() const;
-   void setSmall(bool value);
-
-   void setDevice_name(const char*value);
-
-
-   XID getDevice_id() const;
-   void setDevice_id(const XID&value);
-
-   XID getDevice_id_multi() const;
-   void setDevice_id_multi(const XID&value);
-
-private:
-   /// Name of the device (driver)
-   const char* device_name;
-   XYinfo axys;
-   int thr_misclick;
-   int thr_doubleclick;
-   OutputType output_type;
-   char* geometry;
-   bool use_timeout;
-   char* output_filename;
-   bool testMode;
-   Lang lang;
-   bool small;
-   XID device_id;// != (XID)-1)
-   XID device_id_multi;// != (XID)-1)
-};
 
 class Calibrator;
 using PtrCalibrator = std::shared_ptr<Calibrator>;
@@ -224,23 +90,8 @@ using PtrCalibrator = std::shared_ptr<Calibrator>;
 /// Base class for calculating new calibration parameters
 class Calibrator
 {
-public:
-    /// Constructor
-    ///
-    /// The constructor will throw an exception,
-    /// if the touchscreen is not of the type it supports
-//    Calibrator(const char*device_name,
-//               const XYinfo& axys,
-//               const Lang lang,
-//               const int thr_misclick=0,
-//               const int thr_doubleclick=0,
-//               const OutputType output_type=OUTYPE_AUTO,
-//               const char* geometry=0,
-//               const bool use_timeout=1,
-//               const char* output_filename = 0,
-//               const bool testMode0 = false,
-//               const bool small = false);
 
+public:
 
     /// Parse arguments and create calibrator
     static PtrCalibrator make_calibrator(int argc, char** argv);
@@ -248,15 +99,6 @@ public:
     Calibrator(const PtrCalibratorBuilder builder);
 
     virtual ~Calibrator() {}
-
-    /// set the doubleclick treshold
-    void set_threshold_doubleclick(int t)
-    { threshold_doubleclick = t; }
-
-
-    /// set the misclick treshold
-    void set_threshold_misclick(int t)
-    { threshold_misclick = t; }
 
     /// get the number of clicks already registered
     int get_numclicks() const
@@ -333,38 +175,6 @@ protected:
     XYinfo restore_axys;
 
 private:
-
-    /// Name of the device (driver)
-    const char* device_name;
-
-    /// Test mode
-    bool testMode;
-
-    /// language
-    Lang lang;
-
-    //small size
-    bool small;
-
-    // Threshold to keep the same point from being clicked twice.
-    // Set to zero if you don't want this check
-    int threshold_doubleclick;
-
-    // Threshold to detect mis-clicks (clicks not along axes)
-    // A lower value forces more precise calibration
-    // Set to zero if you don't want this check
-    int threshold_misclick;
-
-    // Type of output
-    OutputType output_type;
-
-    // manually specified geometry string
-    const char* geometry;
-
-    bool use_timeout;
-
-    // manually specified output filename
-    const char* output_filename;
 
     // sysfs path/file
     static const char* SYSFS_INPUT;

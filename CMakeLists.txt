@@ -44,11 +44,11 @@ include_directories("${PROJECT_SOURCE_DIR}/calibrator")
 
 set(TARGET_EXE ../xinput_calibrator)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g")
-#set(CMAKE_CXX_FLAGS "-std=c++11  -Ofast -s")
+set(CMAKE_CXX_FLAGS "-std=c++11  -Ofast -s")
 #set(CMAKE_CXX_FLAGS "-std=c++11  -g")
 
 set(HEADER calibrator.hh 
+           calibratorbuilder.hh 
            lang.hh
            calibrator/Evdev.hpp 
            calibrator/EvdevTester.hpp 
@@ -96,6 +96,7 @@ set(HEADER calibrator.hh
 
 
 set(SOURCE calibrator.cpp
+           calibratorbuilder.cpp
            lang.cpp
            main.cpp
            main_common.cpp

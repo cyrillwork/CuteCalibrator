@@ -37,7 +37,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput.h>
 
-static const char* VERSION = "1.2";
+static const char* VERSION = "1.3";
 
 
 // strdup: non-ansi
@@ -168,10 +168,10 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
         for (int j=0; j<list->num_classes; j++)
         {
 
-            if ((any->c_class == ValuatorClass) && (
-                            (list->type == 112)     // TouchScreen
-                        /*||  (list->type == 109)*/ // Keyboard
-                        ))
+            if (any->c_class == ValuatorClass)
+//                && (       (list->type == 112)     // TouchScreen
+//                        ||  (list->type == 109)*/ // Keyboard
+//                        ))
 
             {
                 XValuatorInfoPtr V = (XValuatorInfoPtr) any;
@@ -496,6 +496,7 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
             printf("DEBUG: Selected device: %s\n", device_name);
         }
 
+        builder->setAxys(device_axys);
         builder->setDevice_name(device_name);
         builder->setDevice_id(device_id);
         builder->setDevice_id_multi(device_id_multi);
@@ -520,7 +521,7 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
                 device_axys.y.min, device_axys.y.max);
         }
 
-        builder->setAxys(pre_axys);
+        builder->setAxys(device_axys);
     }
 
 

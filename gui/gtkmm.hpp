@@ -26,6 +26,8 @@
 
 #include <gtkmm/drawingarea.h>
 #include "calibrator.hh"
+#include "gui/gui_common.hpp"
+
 #include <list>
 #include <map>
 
@@ -53,7 +55,7 @@ class CalibrationArea : public Gtk::DrawingArea
 {
 public:
 
-    CalibrationArea(PtrCalibrator w);
+    CalibrationArea(PtrCalibrator calb, PtrCommonData data);
 
 protected:
 
@@ -64,12 +66,16 @@ protected:
         double blue;
     };
 
-    // Data
-    std::shared_ptr<Calibrator> calibrator;
+    // Calibrator
+    PtrCalibrator calibrator;
+
+    // Options data
+    PtrCommonData commonData;
 
     double X[4], Y[4];
     int display_width, display_height;
     int time_elapsed;
+
     std::vector<std::string> display_texts;
 
     const char* message;
@@ -113,8 +119,6 @@ private:
     const Color Red     = {0.8,     0.0,    0.0};
     const Color White   = {1.0,     1.0,    1.0};
     const Color Gray    = {0.5,     0.5,    0.5};
-
-    //const std::string dirFileName = "/build/CuteCalibration/";
 
     Cairo::RefPtr<Cairo::ToyFontFace> mainFont;
 

@@ -30,6 +30,7 @@
 #include <cmath>
 
 #include "calibrator.hh"
+#include "calibratorbuilder.hh"
 
 // static instances
 bool Calibrator::verbose = false;
@@ -38,42 +39,26 @@ const char* Calibrator::SYSFS_INPUT="/sys/class/input";
 const char* Calibrator::SYSFS_DEVNAME="device/name";
 
 
-//Calibrator::Calibrator(const char* device_name0, const XYinfo& axys0, const Lang l,
-//    const int thr_misclick, const int thr_doubleclick,
-//    const OutputType output_type0, const char* geometry0,
-//    const bool use_timeout0, const char* output_filename0, const bool testMode0, const bool s)
-//    : device_name(device_name0), testMode(testMode0), lang{l}, small{s},
-//    threshold_doubleclick(thr_doubleclick), threshold_misclick(thr_misclick),
-//    output_type(output_type0),
-//    geometry(geometry0),
-//    use_timeout(use_timeout0),
-//    output_filename(output_filename0)
-//{
-//    old_axys = axys0;
-//    restore_axys = {};
-
-//    clicked.num = 0;
-
-//    //clicked.x(NUM_POINTS);
-//    //clicked.y(NUM_POINTS);
-//}
 
 Calibrator::Calibrator(const PtrCalibratorBuilder builder)
 {
+    old_axys = builder->getAxys();
+    restore_axys = {};
     options = builder;
+    clicked.num = 0;
 }
 
 bool Calibrator::add_click(int x, int y)
 {
     // Double-click detection
-    if (threshold_doubleclick > 0 && clicked.num > 0) {
+    if (options->getThrDoubleclick() > 0 && clicked.num > 0) {
         int i = clicked.num - 1;
         while (i >= 0) {
-            if (abs(x - clicked.x[i]) <= threshold_doubleclick
-                && abs(y - clicked.y[i]) <= threshold_doubleclick) {
+            if (abs(x - clicked.x[i]) <= options->getThrDoubleclick()
+                && abs(y - clicked.y[i]) <= options->getThrDoubleclick()) {
                 if (verbose) {
                     printf("DEBUG: Not adding click %i (X=%i, Y=%i): within %i pixels of previous click\n",
-                         clicked.num, x, y, threshold_doubleclick);
+                         clicked.num, x, y, options->getThrDoubleclick());
                 }
                 return false;
             }
@@ -84,7 +69,8 @@ bool Calibrator::add_click(int x, int y)
     //std::cout << "clicked.num = " << clicked.num << std::endl;
 
     // Mis-click detection
-    if (threshold_misclick > 0 && clicked.num > 0) {
+    if (options->getThrMisclick() > 0 && clicked.num > 0)
+    {
         bool misclick = true;
 
         switch (clicked.num) {
@@ -96,7 +82,7 @@ bool Calibrator::add_click(int x, int y)
                     misclick = false;
                 } else if (verbose) {
                     printf("DEBUG: Mis-click detected, click %i (X=%i, Y=%i) not aligned with click 0 (X=%i, Y=%i) (threshold=%i)\n",
-                            clicked.num, x, y, clicked.x[UL], clicked.y[UL], threshold_misclick);
+                            clicked.num, x, y, clicked.x[UL], clicked.y[UL], options->getThrMisclick());
                 }
                 break;
 
@@ -109,11 +95,11 @@ bool Calibrator::add_click(int x, int y)
                 {
                     misclick = false;
                     printf("DEBUG: click %i (X=%i, Y=%i) not aligned with click 0 (X=%i, Y=%i) or click 1 (X=%i, Y=%i) (threshold=%i)\n",
-                            clicked.num, x, y, clicked.x[UL], clicked.y[UL], clicked.x[UR], clicked.y[UR], threshold_misclick);
+                            clicked.num, x, y, clicked.x[UL], clicked.y[UL], clicked.x[UR], clicked.y[UR], options->getThrMisclick());
 
                 } else if (verbose) {
                     printf("DEBUG: Mis-click detected, click %i (X=%i, Y=%i) not aligned with click 0 (X=%i, Y=%i) or click 1 (X=%i, Y=%i) (threshold=%i)\n",
-                            clicked.num, x, y, clicked.x[UL], clicked.y[UL], clicked.x[UR], clicked.y[UR], threshold_misclick);
+                            clicked.num, x, y, clicked.x[UL], clicked.y[UL], clicked.x[UR], clicked.y[UR], options->getThrMisclick());
                 }
                 break;
 
@@ -127,13 +113,13 @@ bool Calibrator::add_click(int x, int y)
                     misclick = false;
 
                     printf("DEBUG: click %i (X=%i, Y=%i) not aligned with click 1 (X=%i, Y=%i) or click 2 (X=%i, Y=%i) (threshold=%i)\n",
-                            clicked.num, x, y, clicked.x[UR], clicked.y[UR], clicked.x[LL], clicked.y[LL], threshold_misclick);
+                            clicked.num, x, y, clicked.x[UR], clicked.y[UR], clicked.x[LL], clicked.y[LL], options->getThrMisclick());
 
                 }
                 else
                 if (verbose) {
                     printf("DEBUG: Mis-click detected, click %i (X=%i, Y=%i) not aligned with click 1 (X=%i, Y=%i) or click 2 (X=%i, Y=%i) (threshold=%i)\n",
-                            clicked.num, x, y, clicked.x[UR], clicked.y[UR], clicked.x[LL], clicked.y[LL], threshold_misclick);
+                            clicked.num, x, y, clicked.x[UR], clicked.y[UR], clicked.x[LL], clicked.y[LL], options->getThrMisclick());
                 }
             break;
 
@@ -179,8 +165,8 @@ void Calibrator::add_click_simple(int x, int y)
 
 inline bool Calibrator::along_axis(int xy, int x0, int y0)
 {
-    return ((abs(xy - x0) <= threshold_misclick) ||
-            (abs(xy - y0) <= threshold_misclick));
+    return ((abs(xy - x0) <= options->getThrMisclick()) ||
+            (abs(xy - y0) <= options->getThrMisclick()));
 }
 
 bool Calibrator::finish(int width, int height)
@@ -240,9 +226,9 @@ bool Calibrator::finish(int width, int height)
 
 const char* Calibrator::get_sysfs_name()
 {
-    if (is_sysfs_name(device_name))
+    if (is_sysfs_name(options->getDevice_name()))
     {
-        return device_name;
+        return options->getDevice_name();
     }
 
     // TODO: more mechanisms
@@ -385,151 +371,3 @@ scaleAxis(float Cx, int to_max, int to_min, int from_max, int from_min)
 }
 
 
-CalibratorBuilder::CalibratorBuilder(const CalibratorBuilder& builder)
-{
-    device_name = builder.getDevice_name();
-    axys = builder.getAxys();
-    thr_misclick = builder.getThrMisclick();
-    thr_doubleclick = builder.getThrDoubleclick();
-    output_type = builder.getOutput_type();
-    geometry = builder.getGeometry();
-    use_timeout = builder.getUse_timeout();
-    output_filename = builder.getOutput_filename();
-    testMode = builder.getTestMode();
-    lang = builder.getLang();
-    small = builder.getSmall();
-}
-
-CalibratorBuilder* CalibratorBuilder::setThrMisclick(int value)
-{
-    this->thr_misclick = value;
-    return this;
-}
-
-CalibratorBuilder* CalibratorBuilder::setThrDoubleclick(int value)
-{
-    this->thr_doubleclick = value;
-    return this;
-}
-
-XYinfo CalibratorBuilder::getAxys() const
-{
-    return axys;
-}
-
-CalibratorBuilder* CalibratorBuilder::setAxys(const XYinfo&value)
-{
-    this->axys = value;
-    return this;
-}
-
-const char*CalibratorBuilder::getDevice_name() const
-{
-    return device_name;
-}
-
-OutputType CalibratorBuilder::getOutput_type() const
-{
-    return output_type;
-}
-
-void CalibratorBuilder::setOutput_type(const OutputType&value)
-{
-    output_type = value;
-}
-
-char*CalibratorBuilder::getGeometry() const
-{
-    return geometry;
-}
-
-void CalibratorBuilder::setGeometry(char*value)
-{
-    geometry = value;
-}
-
-bool CalibratorBuilder::getUse_timeout() const
-{
-    return use_timeout;
-}
-
-CalibratorBuilder* CalibratorBuilder::setUse_timeout(bool value)
-{
-    this->use_timeout = value;
-    return this;
-}
-
-char*CalibratorBuilder::getOutput_filename() const
-{
-    return output_filename;
-}
-
-void CalibratorBuilder::setOutput_filename(char*value)
-{
-    output_filename = value;
-}
-
-bool CalibratorBuilder::getTestMode() const
-{
-    return testMode;
-}
-
-void CalibratorBuilder::setTestMode(bool value)
-{
-    testMode = value;
-}
-
-Lang CalibratorBuilder::getLang() const
-{
-    return lang;
-}
-
-void CalibratorBuilder::setLang(const Lang&value)
-{
-    lang = value;
-}
-
-bool CalibratorBuilder::getSmall() const
-{
-    return small;
-}
-
-void CalibratorBuilder::setSmall(bool value)
-{
-    small = value;
-}
-
-void CalibratorBuilder::setDevice_name(const char*value)
-{
-    device_name = value;
-}
-
-XID CalibratorBuilder::getDevice_id() const
-{
-    return device_id;
-}
-
-void CalibratorBuilder::setDevice_id(const XID&value)
-{
-    device_id = value;
-}
-
-XID CalibratorBuilder::getDevice_id_multi() const
-{
-    return device_id_multi;
-}
-
-void CalibratorBuilder::setDevice_id_multi(const XID&value)
-{
-    device_id_multi = value;
-}
-
-int CalibratorBuilder::getThrMisclick() const
-{
-    return thr_misclick;
-}
-
-int CalibratorBuilder::getThrDoubleclick() const
-{
-    return thr_doubleclick;
-}

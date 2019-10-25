@@ -31,10 +31,14 @@
 #define MAX_LEFT        69
 #define MOVE_STEP       2
 
-CalibrationArea::CalibrationArea(PtrCalibrator calibrator0)
-  : calibrator(calibrator0), time_elapsed(0), message(NULL)
+CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
+    calibrator(calb),
+    commonData(data),
+    time_elapsed(0),
+    message(NULL)
+
 {
-    if(!get_display_texts_json(&display_texts,  calibrator->options->getLang()))
+    if(!get_common_data_json(&display_texts,  calibrator->options->getLang()))
     {
         // setup strings
         get_display_texts_default(&display_texts, calibrator->options->getLang());
@@ -72,14 +76,16 @@ CalibrationArea::CalibrationArea(PtrCalibrator calibrator0)
     if(calibrator->options->getUse_timeout())
     {
         sigc::slot<bool> slot = sigc::mem_fun(*this, &CalibrationArea::on_timer_signal);
-        Glib::signal_timeout().connect(slot, time_step);
+        Glib::signal_timeout().connect(slot, commonData->getTimeStep());
     }
 
     for(const auto& iii: fileNames)
     {
         try {
             images.push_back( Cairo::ImageSurface::create_from_png(Calibrator::getPathResource() + iii) );
-        } catch (std::exception) {
+        }
+        catch (std::exception)
+        {
             std::cout << "Error load or parse file " << Calibrator::getPathResource() + iii << std::endl;
             loadImages = false;
         }
@@ -95,7 +101,6 @@ CalibrationArea::CalibrationArea(PtrCalibrator calibrator0)
        mainFont = Cairo::ToyFontFace::create(   nameFont,
                                      Cairo::FONT_SLANT_NORMAL, /*Cairo::FONT_SLANT_ITALIC,*/
                                      Cairo::FONT_WEIGHT_NORMAL /*Cairo::FONT_WEIGHT_BOLD*/);
-
     }
     else
     {
@@ -107,7 +112,8 @@ CalibrationArea::CalibrationArea(PtrCalibrator calibrator0)
 
 }
 
-void CalibrationArea::set_display_size(int width, int height) {
+void CalibrationArea::set_display_size(int width, int height)
+{
     display_width = width;
     display_height = height;
 
@@ -220,25 +226,24 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
 
                 cr->set_line_width(1);
 
-                cr->move_to(X[i] - cross_lines*0.25, Y[i]);
-                cr->rel_line_to(cross_lines*0.5, 0);
+                cr->move_to(X[i] - commonData->getCrossLines()*0.25, Y[i]);
+                cr->rel_line_to(commonData->getCrossLines()*0.5, 0);
 
-                cr->move_to(X[i], Y[i] - cross_lines*0.25);
-                cr->rel_line_to(0, cross_lines*0.5);
+                cr->move_to(X[i], Y[i] - commonData->getCrossLines()*0.25);
+                cr->rel_line_to(0, commonData->getCrossLines()*0.5);
                 cr->stroke();
 
-                cr->set_line_width(defaultBoarderWidth);
+                cr->set_line_width(commonData->getDefaultBoarderWidth());
 
-                cr->arc(X[i], Y[i], cross_circle*0.5, 0.0, 2.0 * M_PI);
+                cr->arc(X[i], Y[i], commonData->getCrossCircle()*0.5, 0.0, 2.0 * M_PI);
                 cr->stroke();
 
-                cr->arc(X[i], Y[i], cross_circle*0.75, 0.0, 2.0 * M_PI);
+                cr->arc(X[i], Y[i], commonData->getCrossCircle()*0.75, 0.0, 2.0 * M_PI);
                 cr->stroke();
 
                 //cr->set_line_width(boarder);
-                cr->arc(X[i], Y[i], cross_circle, 0.0, 2.0 * M_PI);
+                cr->arc(X[i], Y[i], commonData->getCrossCircle(), 0.0, 2.0 * M_PI);
                 cr->stroke();
-
 
                 if(target)
                 {
@@ -297,18 +302,17 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
         //Draw clock
         if(!showLastMessage)
         {
-
             int del_clock = 120;
 
             // Draw the clock background
             setColor(cr, Blue);
             cr->set_line_width(1);
-            cr->arc(display_width/2, display_height/2 + del_clock, clock_radius/2, 0.0, 2.0 * M_PI);
+            cr->arc(display_width/2, display_height/2 + del_clock, commonData->getClockRadius()/2, 0.0, 2.0 * M_PI);
             cr->stroke();
 
             setColor(cr, Blue);
             cr->set_line_width(1);
-            cr->arc(display_width/2, display_height/2 + del_clock, (clock_radius/2) - clock_line_width, 0.0, 2.0 * M_PI);
+            cr->arc(display_width/2, display_height/2 + del_clock, (commonData->getClockRadius()/2) - commonData->getClockLineWidth(), 0.0, 2.0 * M_PI);
             cr->stroke();
 
 
@@ -325,9 +329,9 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
             }
             */
 
-            cr->set_line_width(clock_line_width);
-            cr->arc(display_width/2, display_height/2 + del_clock, (clock_radius - clock_line_width)/2,
-                    3/2.0*M_PI, (3/2.0*M_PI) + ((double)time_elapsed/(double)max_time) * 2*M_PI);
+            cr->set_line_width(commonData->getClockLineWidth());
+            cr->arc(display_width/2, display_height/2 + del_clock, (commonData->getClockRadius() - commonData->getClockLineWidth())/2,
+                    3/2.0*M_PI, (3/2.0*M_PI) + ((double)time_elapsed/(double)commonData->getMaxTime()) * 2*M_PI);
 
             //setColor(cr, Blue);
             cr->stroke();
@@ -350,7 +354,7 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
             if(!showLastMessage) {
                 //Draw warning messages
                 x = (display_width - text_width) / 2;
-                y = (display_height - text_height) / 2  + 120 + clock_radius;
+                y = (display_height - text_height) / 2  + 120 + commonData->getClockRadius();
             } else {
                 //Draw last message
                 x = (display_width - text_width) / 2;
@@ -381,9 +385,7 @@ void CalibrationArea::redraw()
         //win->set_keep_above();
         const Gdk::Rectangle rect(0, 0, display_width, display_height);
         win->invalidate_rect(rect, false);
-
         //std::cout << " set_keep_above redraw " << std::endl;
-
     }
 }
 
@@ -391,8 +393,8 @@ bool CalibrationArea::on_timer_signal()
 {
     if (calibrator->options->getUse_timeout())
     {
-        time_elapsed += time_step;
-        if (time_elapsed > max_time)
+        time_elapsed += commonData->getTimeStep();
+        if (time_elapsed > commonData->getMaxTime())
         {
             if(showLastMessage)
             {
@@ -454,7 +456,9 @@ bool CalibrationArea::on_button_press_event(GdkEventButton *event)
             showLastMessage = true;
         }
 
-        time_elapsed = 6*max_time/7;
+        time_elapsed = commonData->getMaxTime() - commonData->getLastTime();
+
+        //std::cout << "time_elapsed=" << time_elapsed << std::endl;
 
     }
 

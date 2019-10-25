@@ -30,6 +30,7 @@
 #include <iostream>
 #include <fstream>
 
+using namespace rapidjson;
 
 void get_display_texts_default(std::vector<std::string> *texts, const Lang& lang)
 {
@@ -88,9 +89,7 @@ void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator /*c
     texts->push_back("(To abort, press any key)");
 }
 
-using namespace rapidjson;
-
-bool get_display_texts_json(std::vector<std::string>* texts, const Lang& lang)
+bool get_common_data_json(std::vector<std::string>* texts, const Lang& lang)
 {
     bool result = false;
 
@@ -122,4 +121,84 @@ bool get_display_texts_json(std::vector<std::string>* texts, const Lang& lang)
     }
 
     return result;
+}
+
+int CommonData::getTimeStep() const
+{
+    return timeStep;
+}
+
+void CommonData::setTimeStep(int value)
+{
+    timeStep = value;
+}
+
+int CommonData::getMaxTime() const
+{
+    return maxTime;
+}
+
+void CommonData::setMaxTime(int value)
+{
+    maxTime = value;
+}
+
+int CommonData::getLastTime() const
+{
+    return lastTime;
+}
+
+void CommonData::setLastTime(int value)
+{
+    lastTime = value;
+}
+
+int CommonData::getCrossLines() const
+{
+    return crossLines;
+}
+
+void CommonData::setCrossLines(int value)
+{
+    crossLines = value;
+}
+
+int CommonData::getCrossCircle() const
+{
+    return crossCircle;
+}
+
+void CommonData::setCrossCircle(int value)
+{
+    crossCircle = value;
+}
+
+int CommonData::getClockRadius() const
+{
+    return clockRadius;
+}
+
+void CommonData::setClockRadius(int value)
+{
+    clockRadius = value;
+}
+
+int CommonData::getClockLineWidth() const
+{
+    return clockLineWidth;
+}
+
+void CommonData::setClockLineWidth(int value)
+{
+    clockLineWidth = value;
+}
+
+int CommonData::getDefaultBoarderWidth() const
+{
+    return defaultBoarderWidth;
+}
+
+void CommonData::setDefaultBoarderWidth(int value)
+{
+    defaultBoarderWidth = value;
 }

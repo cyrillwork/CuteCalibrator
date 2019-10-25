@@ -26,25 +26,79 @@
 #include "calibrator.hh"
 #include <list>
 #include <string>
+#include <memory>
 
-// Timeout parameters
-const int time_step = 50;  // in milliseconds
-const int max_time  = 15000; // in milliseconds, 5000 = 5 sec
+class CommonData;
+using PtrCommonData = std::shared_ptr<CommonData>;
 
-// Clock appereance
-const int cross_lines       = 40;
-const int cross_circle      = 40;
+class CommonData
+{
+public:
+    CommonData(
+                const int time_step = 50,
+                const int max_time  = 15000,
+                const int last_time = 2000,
+                const int cross_lines = 40,
+                const int cross_circle = 40,
+                const int clock_radius = 120,
+                const int clock_line_width = 20,
+                const int boarderWidth = 3):
+        timeStep(time_step),
+        maxTime(max_time),
+        lastTime(last_time),
+        crossLines(cross_lines),
+        crossCircle(cross_circle),
+        clockRadius(clock_radius),
+        clockLineWidth(clock_line_width),
+        defaultBoarderWidth(boarderWidth)
+    { }
 
-const int clock_radius      = 120;//150;//50;
-const int clock_line_width  = 20;//10;
+    int getTimeStep() const;
+    void setTimeStep(int value);    // in milliseconds
 
-const int defaultBoarderWidth  = 3;
-//const int bigBoarderWidth      = 6;
+    int getMaxTime() const;
+    void setMaxTime(int value);     // in milliseconds
 
+    int getLastTime() const;
+    void setLastTime(int value);
+
+    int getCrossLines() const;
+    void setCrossLines(int value);
+
+    int getCrossCircle() const;
+    void setCrossCircle(int value);
+
+    int getClockRadius() const;
+    void setClockRadius(int value);
+
+    int getClockLineWidth() const;
+    void setClockLineWidth(int value);
+
+    int getDefaultBoarderWidth() const;
+    void setDefaultBoarderWidth(int value);
+
+private:
+    // Timeout parameters
+    int timeStep;          // in milliseconds
+    int maxTime;           // in milliseconds, 5000 = 5 sec
+    int lastTime;          // in milliseconds
+
+    // Clock appereance
+    int crossLines;
+    int crossCircle;
+
+    int clockRadius;
+    int clockLineWidth;
+
+    int defaultBoarderWidth;
+};
+
+//const int clock_radius      = 120;//150;//50;
+//const int clock_line_width  = 20;//10;
 
 void get_display_texts_default(std::vector<std::string> *texts, const Lang &lang);
 
-bool get_display_texts_json(std::vector<std::string> *texts, const Lang &lang);
+bool get_common_data_json(std::vector<std::string> *texts, const Lang &lang);
 
 void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator calibrator);
 
