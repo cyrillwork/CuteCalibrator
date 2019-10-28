@@ -40,7 +40,6 @@ int main(int argc, char** argv)
     auto calibrator = Calibrator::make_calibrator(argc, argv);
 
     //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-
     // GTK-mm setup
     Gtk::Main kit(argc, argv);
 
@@ -104,8 +103,10 @@ int main(int argc, char** argv)
     //win.gtk_style_set_background();
     //win.modify_bg(Gtk::STATE_NORMAL, back_color);
 
+    auto data = std::make_shared<CommonData>();
+    data->initDataFromFile(calibrator->options->getLang().toString());
 
-    CalibrationArea area(calibrator, std::make_shared<CommonData>());
+    CalibrationArea area(calibrator, data);
     win.add(area);
     area.show();
 

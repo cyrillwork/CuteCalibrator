@@ -42,16 +42,11 @@ public:
                 const int cross_circle = 40,
                 const int clock_radius = 120,
                 const int clock_line_width = 20,
-                const int boarderWidth = 3):
-        timeStep(time_step),
-        maxTime(max_time),
-        lastTime(last_time),
-        crossLines(cross_lines),
-        crossCircle(cross_circle),
-        clockRadius(clock_radius),
-        clockLineWidth(clock_line_width),
-        defaultBoarderWidth(boarderWidth)
-    { }
+                const int boarderWidth = 3,
+                const std::string &lang = "en");
+
+
+    CommonData(const std::string &lang);
 
     int getTimeStep() const;
     void setTimeStep(int value);    // in milliseconds
@@ -77,7 +72,17 @@ public:
     int getDefaultBoarderWidth() const;
     void setDefaultBoarderWidth(int value);
 
+
+    using PtrVectorString = std::shared_ptr<std::vector<std::string> >;
+
+    void setDisplay_texts(const PtrVectorString& value);
+
+    PtrVectorString getDisplay_texts() const;
+
+    void initDataFromFile(const std::string &lang);
+
 private:
+
     // Timeout parameters
     int timeStep;          // in milliseconds
     int maxTime;           // in milliseconds, 5000 = 5 sec
@@ -91,15 +96,12 @@ private:
     int clockLineWidth;
 
     int defaultBoarderWidth;
+
+    std::shared_ptr<std::vector<std::string> > display_texts = nullptr;
 };
 
-//const int clock_radius      = 120;//150;//50;
-//const int clock_line_width  = 20;//10;
+void get_display_texts_default(std::shared_ptr<std::vector<std::string> >texts, const Lang &lang);
 
-void get_display_texts_default(std::vector<std::string> *texts, const Lang &lang);
-
-bool get_common_data_json(std::vector<std::string> *texts, const Lang &lang);
-
-void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator calibrator);
+bool get_common_data_json(CommonData& data, const Lang &lang);
 
 #endif

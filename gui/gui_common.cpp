@@ -32,7 +32,7 @@
 
 using namespace rapidjson;
 
-void get_display_texts_default(std::vector<std::string> *texts, const Lang& lang)
+void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, const Lang& lang)
 {
 	switch(lang.getLang())
 	{
@@ -61,7 +61,6 @@ void get_display_texts_default(std::vector<std::string> *texts, const Lang& lang
 			texts->push_back("Mistouch detected, restarting...");
 			texts->push_back("Calibration completed");
 		}
-
 	}
 }
 
@@ -89,14 +88,19 @@ void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator /*c
     texts->push_back("(To abort, press any key)");
 }
 
-bool get_common_data_json(std::vector<std::string>* texts, const Lang& lang)
+bool get_common_data_json(CommonData &data, const Lang& lang)
 {
     bool result = false;
 
-    std::ifstream ifs(Calibrator::getPathResource() + "lang.json");
+    std::string fileName = Calibrator::getPathResource() + "options.json";
+
+    std::ifstream ifs(fileName);
 
     if(ifs.is_open())
     {
+
+        data.getDisplay_texts()->clear();
+
         Document document;
         IStreamWrapper wp(ifs);
         document.ParseStream(wp);
@@ -104,23 +108,66 @@ bool get_common_data_json(std::vector<std::string>* texts, const Lang& lang)
         {
             //std::cout << "Element name=" << it->name.GetString() << std::endl;
             std::string node(it->name.GetString());
+
+            if(node == "main")
+            {
+                const auto &doc = it->value;
+                if(doc.IsObject())
+                {
+                    data.setTimeStep( doc["time_step"].GetInt() );
+                    data.setMaxTime( doc["max_time"].GetInt() );
+                    data.setLastTime( doc["last_time"].GetInt() );
+                    data.setCrossLines( doc["cross_lines"].GetInt() );
+                    data.setCrossCircle( doc["cross_circle"].GetInt() );
+                    data.setClockRadius( doc["clock_radius"].GetInt() );
+                    data.setClockLineWidth( doc["clock_line_width"].GetInt() );
+                    data.setDefaultBoarderWidth( doc["boarderWidth"].GetInt() );
+                }
+            }
+            else
+
             if(node == lang.toString())
             {
                 //std::cout << "node=" << node << std::endl;
                 const auto &doc = it->value;
                 if(doc.IsObject())
                 {
-                    texts->push_back(doc["0"].GetString());
-                    texts->push_back(doc["1"].GetString());
-                    texts->push_back(doc["2"].GetString());
-                    texts->push_back(doc["3"].GetString());
+                    data.getDisplay_texts()->push_back(doc["0"].GetString());
+                    data.getDisplay_texts()->push_back(doc["1"].GetString());
+                    data.getDisplay_texts()->push_back(doc["2"].GetString());
+                    data.getDisplay_texts()->push_back(doc["3"].GetString());
                     result = true;
                 }
             }
         }
     }
+    else
+    {
+        std::cout << "File " << fileName << " not open !!!" << std::endl;
+    }
 
     return result;
+}
+
+CommonData::CommonData(const int time_step,
+                            const int max_time,
+                            const int last_time,
+                            const int cross_lines,
+                            const int cross_circle,
+                            const int clock_radius,
+                            const int clock_line_width,
+                            const int boarderWidth,
+                            const std::string&):
+    timeStep(time_step),
+    maxTime(max_time),
+    lastTime(last_time),
+    crossLines(cross_lines),
+    crossCircle(cross_circle),
+    clockRadius(clock_radius),
+    clockLineWidth(clock_line_width),
+    defaultBoarderWidth(boarderWidth)
+{
+    display_texts = std::make_shared<std::vector<std::string> >();
 }
 
 int CommonData::getTimeStep() const
@@ -201,4 +248,23 @@ int CommonData::getDefaultBoarderWidth() const
 void CommonData::setDefaultBoarderWidth(int value)
 {
     defaultBoarderWidth = value;
+}
+
+void CommonData::setDisplay_texts(const PtrVectorString&value)
+{
+    display_texts = value;
+}
+
+CommonData::PtrVectorString CommonData::getDisplay_texts() const
+{
+    return display_texts;
+}
+
+void CommonData::initDataFromFile(const std::string &lang)
+{
+    if(!get_common_data_json(*this,  Lang(lang)))
+    {
+        get_display_texts_default(display_texts, Lang(lang));
+    }
+
 }

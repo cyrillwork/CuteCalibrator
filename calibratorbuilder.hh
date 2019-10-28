@@ -67,8 +67,6 @@ enum OutputType
 };
 
 
-
-
 class CalibratorBuilder;
 using PtrCalibratorBuilder = std::shared_ptr<CalibratorBuilder>;
 

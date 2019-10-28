@@ -38,11 +38,13 @@ CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
     message(NULL)
 
 {
+    /*
     if(!get_common_data_json(&display_texts,  calibrator->options->getLang()))
     {
         // setup strings
         get_display_texts_default(&display_texts, calibrator->options->getLang());
     }
+    */
 
     // Listen for mouse events
     add_events(Gdk::KEY_PRESS_MASK | Gdk::BUTTON_PRESS_MASK);
@@ -160,7 +162,7 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
 
         Cairo::TextExtents extent;
 
-        for (auto it = display_texts.begin(); it != display_texts.end(); ++it)
+        for (auto it = commonData->getDisplay_texts()->begin(); it != commonData->getDisplay_texts()->end(); ++it)
         {
             cr->get_text_extents(*it, extent);
             text_width = std::max(text_width, extent.width);
@@ -181,14 +183,14 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
             y -= 3;
             //for (auto rev_it = display_texts.begin(); rev_it != display_texts.end(); ++rev_it)
             {
-                cr->get_text_extents(display_texts[FirstLine], extent);
+                cr->get_text_extents((*commonData->getDisplay_texts())[FirstLine], extent);
                 cr->move_to(x + (text_width-extent.width)/2, y);
-                cr->show_text(display_texts[FirstLine]);
+                cr->show_text((*commonData->getDisplay_texts())[FirstLine]);
                 y += text_height + interLines;
 
-                cr->get_text_extents(display_texts[SecondLine], extent);
+                cr->get_text_extents((*commonData->getDisplay_texts())[SecondLine], extent);
                 cr->move_to(x + (text_width-extent.width)/2, y);
-                cr->show_text(display_texts[SecondLine]);
+                cr->show_text((*commonData->getDisplay_texts())[SecondLine]);
                 y += text_height + interLines;
             }
             cr->stroke();
@@ -437,7 +439,7 @@ bool CalibrationArea::on_button_press_event(GdkEventButton *event)
     {
         bool success = calibrator->add_click((int)event->x_root, (int)event->y_root);
         if (!success && calibrator->get_numclicks() == 0) {
-            draw_message(display_texts[MissClick].c_str());
+            draw_message((*commonData->getDisplay_texts())[MissClick].c_str());
         } else {
             draw_message(NULL);
         }
@@ -452,7 +454,7 @@ bool CalibrationArea::on_button_press_event(GdkEventButton *event)
         }
         else
         {
-            draw_message(display_texts[EndMessage].c_str());
+            draw_message((*commonData->getDisplay_texts())[EndMessage].c_str());
             showLastMessage = true;
         }
 

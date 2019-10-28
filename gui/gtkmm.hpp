@@ -76,7 +76,7 @@ protected:
     int display_width, display_height;
     int time_elapsed;
 
-    std::vector<std::string> display_texts;
+    //std::vector<std::string> display_texts;
 
     const char* message;
 

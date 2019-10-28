@@ -37,7 +37,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput.h>
 
-static const char* VERSION = "1.3";
+static const char* VERSION = "2.0";
 
 
 // strdup: non-ansi

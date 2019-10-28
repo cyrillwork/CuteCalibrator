@@ -1,4 +1,16 @@
 {
+        "main":
+        {
+            "time_step": 50,
+            "max_time": 15000,
+            "last_time": 1500,
+            "cross_lines": 40,
+            "cross_circle": 40,
+            "clock_radius": 120,
+            "clock_line_width": 20,
+            "boarderWidth": 3
+        },
+
 	"en": {
                 "0": "Touch the target to continue ",
                 "1": "or wait to cancel",
