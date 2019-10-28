@@ -67,6 +67,7 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
     bool pre_device_is_sysfs = false;
     int found = 0;
     XID device_id_first = (XID) -1;
+    std::string device_name_first;
 
     if(pre_device)
     {
@@ -198,11 +199,16 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
                     /* a calibratable device (has 2 axis valuators) */
                     found++;
                     device_id = list->id;
+                    device_name = my_strdup(list->name);
+
                     if(device_id_first == (XID) -1)
                     {
                         device_id_first = device_id;
-                    }
+                        device_name_first = device_name;
+                    }                    
+
                     device_name = my_strdup(list->name);
+
                     device_axys.x.min = ax[0].min_value;
                     device_axys.x.max = ax[0].max_value;
                     device_axys.y.min = ax[1].min_value;
@@ -239,7 +245,10 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
 
     if(found > 1)
     {
-        device_id_multi = device_id_first;
+        if(device_name_first == device_name)
+        {
+            device_id_multi = device_id_first;
+        }
         //device_id = device_id_first;
     }
 
