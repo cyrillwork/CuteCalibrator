@@ -37,7 +37,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput.h>
 
-static const char* VERSION = "2.0";
+static const char* VERSION = "2.1";
 
 
 // strdup: non-ansi
@@ -68,6 +68,7 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
     int found = 0;
     XID device_id_first = (XID) -1;
     std::string device_name_first;
+    XYinfo device_axys_first = {};
 
     if(pre_device)
     {
@@ -205,7 +206,14 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
                     {
                         device_id_first = device_id;
                         device_name_first = device_name;
-                    }                    
+
+
+                        device_axys_first.x.min = ax[0].min_value;
+                        device_axys_first.x.max = ax[0].max_value;
+                        device_axys_first.y.min = ax[1].min_value;
+                        device_axys_first.y.max = ax[1].max_value;
+
+                    }
 
                     device_name = my_strdup(list->name);
 
@@ -246,8 +254,11 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
     if(found > 1)
     {
         if(device_name_first == device_name)
-        {
-            device_id_multi = device_id_first;
+        {                        
+            device_id_multi = device_id;
+            device_id = device_id_first;
+
+            device_axys = device_axys_first;
         }
         //device_id = device_id_first;
     }
