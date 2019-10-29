@@ -47,7 +47,7 @@ CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
     */
 
     // Listen for mouse events
-    add_events(Gdk::KEY_PRESS_MASK | Gdk::BUTTON_PRESS_MASK);
+    add_events(Gdk::KEY_PRESS_MASK | Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK);
     set_flags(Gtk::CAN_FOCUS);
 
     // parse geometry string
@@ -196,6 +196,7 @@ bool CalibrationArea::on_expose_event(GdkEventExpose *event)
             cr->stroke();
         }
 
+        if(!calibrator->options->getTestMode())
         {
             // Draw the points
             for (int i = 0; i <= calibrator->get_numclicks(); i++)
@@ -432,22 +433,27 @@ bool CalibrationArea::on_timer_signal()
 
 bool CalibrationArea::on_button_press_event(GdkEventButton *event)
 {
+    std::cout << "1 on_button_press_event=" << std::endl;
+
     // Handle click
     time_elapsed = 0;
 
     if(!showLastMessage)
     {
         bool success = calibrator->add_click((int)event->x_root, (int)event->y_root);
-        if (!success && calibrator->get_numclicks() == 0) {
+        if (!success && calibrator->get_numclicks() == 0)
+        {
             draw_message((*commonData->getDisplay_texts())[MissClick].c_str());
-        } else {
+        }
+        else
+        {
             draw_message(NULL);
         }
     }
 
     // Are we done yet?
-    if (calibrator->get_numclicks() >= 4) {
-
+    if (calibrator->get_numclicks() >= 4)
+    {
         if(showLastMessage)
         {
             checkFinish();
@@ -459,13 +465,18 @@ bool CalibrationArea::on_button_press_event(GdkEventButton *event)
         }
 
         time_elapsed = commonData->getMaxTime() - commonData->getLastTime();
-
         //std::cout << "time_elapsed=" << time_elapsed << std::endl;
-
     }
 
     // Force a redraw
     redraw();
+
+    return true;
+}
+
+bool CalibrationArea::on_button_release_event(GdkEventButton *event)
+{
+    std::cout << "2 on_button_press_event=" << std::endl;
 
     return true;
 }

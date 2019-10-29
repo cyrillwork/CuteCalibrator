@@ -37,7 +37,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput.h>
 
-static const char* VERSION = "2.0";
+static const char* VERSION = "2.1";
 
 
 // strdup: non-ansi
@@ -273,6 +273,7 @@ static void usage(char* cmd, unsigned thr_misclick)
     fprintf(stderr, "\t--output-filename: write calibration data to file (USB: override default /etc/modprobe.conf.local\n");
     fprintf(stderr, "\t--lang <en>|<fr> :set language, default english\n");
     fprintf(stderr, "\t--small: set small type calibrator\n");
+    fprintf(stderr, "\t--testmode: run test mode\n");
     fprintf(stderr, "\t--path <resource path>: set resource path\n");
 }
 
@@ -282,18 +283,10 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
 
     bool fake = false;
     bool precalib = false;
-    //bool use_timeout = true;
-    //bool testMode = false;
-    //bool small = false;
-    //Lang lang;
 
     XYinfo pre_axys;
     const char* pre_device = nullptr;
-    //const char* geometry = nullptr;
     const char* output_filename = nullptr;
-    //unsigned thr_misclick = 0;
-    //unsigned thr_doubleclick = 7;
-    //OutputType output_type = OUTYPE_AUTO;
 
     std::shared_ptr<CalibratorBuilder> builder = std::make_shared<CalibratorBuilder>();
 

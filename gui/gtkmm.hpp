@@ -82,9 +82,10 @@ protected:
 
     // Signal handlers
     bool on_timer_signal();
-    bool on_expose_event(GdkEventExpose *event);
-    bool on_button_press_event(GdkEventButton *event);
-    bool on_key_press_event(GdkEventKey *event);
+    bool on_expose_event(GdkEventExpose *event) override;
+    bool on_button_press_event(GdkEventButton *event) override;
+    bool on_button_release_event(GdkEventButton *event) override;
+    bool on_key_press_event(GdkEventKey *event) override;
 
     void checkFinish();
 
