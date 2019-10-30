@@ -43,6 +43,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("Intéraction tactile incorrecte. Redémarrage en cours…");
 			texts->push_back("La calibration est terminée");
 			texts->push_back("Test mode. Check calibration.");
+			texts->push_back("Close");
 		}
 		break;
 
@@ -52,7 +53,8 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("или ожидайте, чтобы отменить калибровку");
 			texts->push_back("Некорректное нажатие. Перезапуск...");
 			texts->push_back("Калибровка завершена");
-			texts->push_back("Test mode. Check calibration.");
+			texts->push_back("Тестовый режим. Проверте калибровку.");
+			texts->push_back("Закрыть");
 		}
 		break;
 
@@ -63,6 +65,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("Mistouch detected, restarting...");
 			texts->push_back("Calibration completed");
 			texts->push_back("Test mode. Check calibration.");
+			texts->push_back("Close");
 		}
 	}
 }

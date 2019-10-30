@@ -49,7 +49,8 @@ enum
     SecondLine,
     MissClick,
     EndMessage,
-    TestMessage
+    TestMessage,
+    CloseButton
 };
 
 class CalibrationArea : public Gtk::DrawingArea
@@ -94,6 +95,7 @@ protected:
     void draw_message(const char* msg);
 
     void setColor(Cairo::RefPtr<Cairo::Context> cr, const Color& color) const;
+    void setColora(Cairo::RefPtr<Cairo::Context> cr, const Color& color, const double alpha) const;
 
     bool showLastMessage        = false;
     bool successCalibaration    = false;

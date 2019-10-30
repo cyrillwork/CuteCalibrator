@@ -4,13 +4,15 @@
 TestMode::TestMode(PtrCalibrator calb, PtrCommonData data):
     CalibrationArea (calb, data),
     isPressButton(false),
-    pointsColor(Blue)
+    pointsColor(Gray), textColor(Blue), clockColor(Blue),
+    XClose(-1), YClose(-1), WidthClose(-1), HeightClose(-1)
 {
     // Listen for mouse events
     add_events( Gdk::KEY_PRESS_MASK |
                 Gdk::BUTTON_PRESS_MASK |
                 Gdk::BUTTON_RELEASE_MASK |
                 Gdk::BUTTON_MOTION_MASK );
+
     calibrator->setBigReserve();
 }
 
@@ -25,8 +27,8 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
 
     Glib::RefPtr<Gdk::Window> window = get_window();
     if (window)
-    {
-        Cairo::RefPtr<Cairo::Context> cr = window->create_cairo_context();
+    {                
+        Cairo::RefPtr<Cairo::Context> cr = window->create_cairo_context();        
         cr->save();
 
         setColor(cr, White);
@@ -54,42 +56,68 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
         double x = (display_width - text_width) / 2;
         double y = (display_height - text_height) / 2 /*- 60*/;
 
-// cyrill
-//        cr->set_line_width(2);
-//        cr->rectangle(x - 10, y - (display_texts.size()*text_height) - 10,
-//                text_width + 20, (display_texts.size()*text_height) + 20);
 
-        if(!showLastMessage)
-        { //Draw Main Text
-            y -= 3;
+        auto crossCircle = commonData->getCrossCircle()*0.1;
+        auto widthPoint = crossCircle;
 
-            {
-                cr->get_text_extents((*commonData->getDisplay_texts())[FirstLine], extent);
-                cr->move_to(x + (text_width-extent.width)/2, y);
-                cr->show_text((*commonData->getDisplay_texts())[TestMessage]);
-                y += text_height + currentFont.interLines;
-            }
-            cr->stroke();
-        }
-
+        setColor(cr, pointsColor);
+        cr->set_line_width(2*widthPoint);
 
         // Draw the points
-        for (int i = 0; i < calibrator->get_numclicks(); i++)
+        for (int i = 0; i < calibrator->get_numclicks(); ++i)
         {
-            setColor(cr, pointsColor);
+            if(!checkCloseButton(calibrator->get_X(i), calibrator->get_Y(i)))
+            {
+                setColor(cr, pointsColor);
+                cr->arc(calibrator->get_X(i), calibrator->get_Y(i), widthPoint, 0.0, 2.0 * M_PI);
+                cr->stroke();
+            }
+            else
+            {
+                setColora(cr, pointsColor, 0.1);
+                cr->arc(calibrator->get_X(i), calibrator->get_Y(i), widthPoint, 0.0, 2.0 * M_PI);
+                cr->stroke();
+            }
+        }
 
-            cr->set_line_width(commonData->getCrossCircle()*0.2);
-            cr->arc(calibrator->get_X(i), calibrator->get_Y(i), commonData->getCrossCircle()*0.1, 0.0, 2.0 * M_PI);
+
+
+        { //Draw Main Text
+            y -= 3;
+            setColor(cr, textColor);
+
+            cr->get_text_extents((*commonData->getDisplay_texts())[FirstLine], extent);
+            cr->move_to(x + (text_width-extent.width)/2, y);
+            cr->show_text((*commonData->getDisplay_texts())[TestMessage]);
+
+            y += text_height + currentFont.interLines;
+
             cr->stroke();
         }
 
+        { //Draw close button
+            cr->set_line_width(2);
+
+            if(XClose == -1)
+            {
+                setCoordClose(cr);
+            }
+
+            cr->rectangle(XClose - del1, YClose  -  HeightClose - del1, WidthClose + 2*del1, HeightClose + 2*del1);
+
+            cr->move_to(XClose, YClose);
+            cr->show_text((*commonData->getDisplay_texts())[CloseButton]);
+
+            cr->stroke();
+        }
+
+
         //Draw clock
-        if(!showLastMessage)
         {
             int del_clock = 120;
 
             // Draw the clock background
-            setColor(cr, Blue);
+            setColor(cr, clockColor);
             cr->set_line_width(1);
             cr->arc(display_width/2, display_height/2 + del_clock, commonData->getClockRadius()/2, 0.0, 2.0 * M_PI);
             cr->stroke();
@@ -121,38 +149,6 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
             cr->stroke();
         }
 
-        // Draw the message (if any)
-        if (message != NULL)
-        {
-            //cr->set_source_rgb(0.0, 0.0, 0.0);
-            //setColor(cr, Black);
-            setColor(cr, Green);
-
-            // Frame the message
-            cr->set_font_size(currentFont.fontSize);
-            Cairo::TextExtents extent;
-            cr->get_text_extents(this->message, extent);
-            text_width = extent.width;
-            text_height = extent.height;
-
-            if(!showLastMessage) {
-                //Draw warning messages
-                x = (display_width - text_width) / 2;
-                y = (display_height - text_height) / 2  + 120 + commonData->getClockRadius();
-            } else {
-                //Draw last message
-                x = (display_width - text_width) / 2;
-                y = (display_height - text_height) / 2;
-
-                cr->move_to(x + (text_width-extent.width)/2, y);
-            }
-
-            // Print the message
-            cr->move_to(x, y);
-            cr->show_text(this->message);
-            cr->stroke();
-        }
-
         cr->restore();
 
     }
@@ -163,7 +159,6 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
 
 bool TestMode::on_button_press_event(GdkEventButton *event)
 {
-    //std::cout << "on_button_press_event" << std::endl;
 
     // Handle click
     time_elapsed = 0;
@@ -174,11 +169,18 @@ bool TestMode::on_button_press_event(GdkEventButton *event)
     redraw();
     isPressButton = true;
 
+
     return true;
 }
 
 bool TestMode::on_button_release_event(GdkEventButton *event)
 {
+    //std::cout << "on_button_press_event" << std::endl;
+    if(checkCloseButton((int)event->x_root, (int)event->y_root))
+    {
+       exit(0);
+    }
+
     //std::cout << "on_button_release_event " << calibrator->get_numclicks() << std::endl;
     isPressButton = false;
     return true;
@@ -228,4 +230,35 @@ bool TestMode::on_timer_signal()
     }
 
     return true;
+}
+
+void TestMode::setCoordClose(Cairo::RefPtr<Cairo::Context> cr)
+{
+    //Draw close button
+    double XXX =  X[2];
+    double YYY =  Y[2];
+
+    Cairo::TextExtents extentClose;
+
+    cr->get_text_extents((*commonData->getDisplay_texts())[CloseButton], extentClose);
+
+    WidthClose  = extentClose.width;
+    HeightClose = extentClose.height;
+
+    XClose = XXX - (extentClose.width/2);
+    YClose = YYY - (extentClose.height/2);
+}
+
+bool TestMode::checkCloseButton(double X, double Y)
+{
+    int del2 = 10;
+    if ( (XClose - del1 - del2 < X ) && ( X < XClose - del1 + WidthClose + 2*del1 + del2) &&
+            (YClose  -  HeightClose - del1 - del2 < Y) && (Y < YClose + del1 + del2)
+            )
+    {
+        return true;
+    }
+
+    return false;
+
 }

@@ -23,9 +23,20 @@ protected:
     bool on_timer_signal() override;
 
 private:
+    void setCoordClose(Cairo::RefPtr<Cairo::Context> cr);
+    bool checkCloseButton(double X, double Y);
+
     bool isPressButton;
 
     Color pointsColor;
+    Color textColor;
+    Color clockColor;
+
+    double XClose;
+    double YClose;
+    double WidthClose;
+    double HeightClose;
+    int del1 = 10;
 
 };
 

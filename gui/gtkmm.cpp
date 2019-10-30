@@ -105,8 +105,6 @@ void CalibrationArea::set_display_size(int width, int height)
 
 
 
-
-
 void CalibrationArea::redraw()
 {
     Glib::RefPtr<Gdk::Window> win = get_window();
@@ -129,6 +127,11 @@ void CalibrationArea::draw_message(const char* msg)
 void CalibrationArea::setColor(Cairo::RefPtr<Cairo::Context> cr, const CalibrationArea::Color& color) const
 {
     cr->set_source_rgb(color.red, color.green, color.blue);
+}
+
+void CalibrationArea::setColora(Cairo::RefPtr<Cairo::Context> cr, const CalibrationArea::Color&color, const double alpha) const
+{
+    cr->set_source_rgba(color.red, color.green, color.blue, alpha);
 }
 
 bool CalibrationArea::on_key_press_event(GdkEventKey *event)

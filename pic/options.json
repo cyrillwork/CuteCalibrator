@@ -29,7 +29,8 @@
                     "or wait to cancel",
                     "Mistouch detected, restarting...",
                     "Calibration completed",
-                    "Test mode. Check calibration"
+                    "Test mode. Check calibration",
+                    "Close"
                 ]
         ,
         "ru": [
@@ -37,13 +38,15 @@
                 "или ожидайте, чтобы отменить калибровку",
                 "Некорректное нажатие. Перезапуск...",
                 "Калибровка завершена",
-                "Тестовый режим. Проверте калибровку"
+                "Тестовый режим. Проверте калибровку",
+                "Закрыть"
         ],
         "fr": [
                 "Touchez la cible pour continuer",
                 "ou attendez pour annuler",
                 "Intéraction tactile incorrecte. Redémarrage en cours…",
                 "La calibration est terminée",
-                "Test mode. Check calibration"
+                "Test mode. Check calibration",
+                "Close"
         ]
 }
