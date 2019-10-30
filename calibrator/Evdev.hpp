@@ -39,38 +39,7 @@ private:
     XDevice     *iDev;
     XDevice     *iDevMulti = nullptr;
 
-protected:
-
-    // protected constructor: should only be used by subclasses!
-    // (pass-through to Calibrator)
-    CalibratorEvdev(const char* const device_name,
-                    const XYinfo& axys,
-                    const Lang lang,
-                    const int thr_misclick=0,
-                    const int thr_doubleclick=0,
-                    const OutputType output_type=OUTYPE_AUTO,
-                    const char* geometry=0,
-                    const bool use_timeout=false,
-                    const char* output_filename = 0,
-                    const bool testMode = false,
-                    const bool small = false);
-
 public:
-
-//    CalibratorEvdev(const char* const device_name,
-//                    const XYinfo& axys,
-//                    const Lang lang,
-//                    XID device_id=(XID)-1,
-//                    XID device_id_multi=(XID)-1,
-//                    const int thr_misclick=0,
-//                    const int thr_doubleclick=0,
-//                    const OutputType output_type=OUTYPE_AUTO,
-//                    const char* geometry=0,
-//                    const bool use_timeout=false,
-//                    const char* output_filename = 0,
-//                    const bool testMode = false,
-//                    const bool small = false);
-
 
     CalibratorEvdev(PtrCalibratorBuilder options);
 

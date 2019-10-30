@@ -48,7 +48,8 @@ enum
     FirstLine = 0,
     SecondLine,
     MissClick,
-    EndMessage
+    EndMessage,
+    TestMessage
 };
 
 class CalibrationArea : public Gtk::DrawingArea
@@ -81,10 +82,8 @@ protected:
     const char* message;
 
     // Signal handlers
-    bool on_timer_signal();
-    bool on_expose_event(GdkEventExpose *event) override;
-    bool on_button_press_event(GdkEventButton *event) override;
-    bool on_button_release_event(GdkEventButton *event) override;
+    virtual bool on_timer_signal() = 0;
+
     bool on_key_press_event(GdkEventKey *event) override;
 
     void checkFinish();
@@ -96,7 +95,7 @@ protected:
 
     void setColor(Cairo::RefPtr<Cairo::Context> cr, const Color& color) const;
 
-private:
+
     std::string nameFont = "SansSerif";
 
     int smallFontSize              = 26;
@@ -106,13 +105,9 @@ private:
     int fontSize      = 36;
     int interLines    = 12;
 
-    bool loadImages             = true;
-
     bool showLastMessage        = false;
     bool successCalibaration    = false;
 
-    int animate                 = 0;
-    bool animateDirection       = true;
 
     const Color Black   = {0.0,     0.0,    0.0};
     const Color Green   = {0.0,     0.8,    0.0};
@@ -122,13 +117,6 @@ private:
     const Color Gray    = {0.5,     0.5,    0.5};
 
     Cairo::RefPtr<Cairo::ToyFontFace> mainFont;
-
-    std::vector<std::string> fileNames = {
-                                            "arrow1.png",       "arrow2.png",       "arrow3.png",       "arrow4.png",
-                                            "arrowGreen1.png",  "arrowGreen2.png",  "arrowGreen3.png",  "arrowGreen4.png"
-                                         };
-
-    std::vector<Cairo::RefPtr<Cairo::ImageSurface>> images;
 };
 
 #endif

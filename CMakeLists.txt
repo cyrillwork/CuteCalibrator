@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 project(QuteCalibrator)
 
-
 find_package(X11 REQUIRED)
 
 message(STATUS "X11_FOUND = ${X11_FOUND}")
@@ -41,11 +40,13 @@ include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/gui")
 include_directories("${PROJECT_SOURCE_DIR}/calibrator")
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(TARGET_EXE ../xinput_calibrator)
-
-set(CMAKE_CXX_FLAGS "-std=c++11  -Ofast -s")
-#set(CMAKE_CXX_FLAGS "-std=c++11  -g")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Ofast -s")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -g")
 
 set(HEADER calibrator.hh 
            calibratorbuilder.hh 
@@ -92,7 +93,10 @@ set(HEADER calibrator.hh
            rapidjson/msinttypes/inttypes.h
            rapidjson/msinttypes/stdint.h
            gui/gtkmm.hpp 
-           gui/gui_common.hpp)
+           gui/gui_common.hpp
+           gui/calibration.hpp
+           gui/testmode.hpp
+           )
 
 
 set(SOURCE calibrator.cpp
@@ -106,16 +110,18 @@ set(SOURCE calibrator.cpp
            calibrator/Usbtouchscreen.cpp
            calibrator/XorgPrint.cpp
            gui/gtkmm.cpp
-           gui/gui_common.cpp)
+           gui/gui_common.cpp
+           gui/calibration.cpp
+           gui/testmode.cpp
+           )
 
 
-add_executable(${TARGET_EXE} ${HEADER} ${SOURCE})
-
-target_link_libraries(${TARGET_EXE}
-	${X11_LIBRARIES} 
-	${GTKMM_LIBRARY_DIRS}
-        -lX11
-	-lXi
+add_executable(../xinput_calibrator ${HEADER} ${SOURCE})
+target_link_libraries(../xinput_calibrator
+        ${X11_LIBRARIES}
+        ${GTKMM_LIBDIR}
+        ${GTKMM_LIBRARY_DIRS}
+        ${X11_Xi_LIB}
 	-lgtkmm-2.4 
 	-latkmm-1.6 
 	-lgdkmm-2.4 

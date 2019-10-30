@@ -34,7 +34,8 @@
 
 
 // XXX: we currently don't handle lines that are longer than this
-#define MAX_LINE_LEN 1024
+#define MAX_LINE_LEN    1024
+#define RESERVE_POINTS  5000
 
 
 /*
@@ -138,6 +139,12 @@ public:
     static const std::string & getPathResource();
 
     std::shared_ptr<CalibratorBuilder> options;
+
+    void setBigReserve(){
+        clicked.x.reserve(RESERVE_POINTS);
+        clicked.y.reserve(RESERVE_POINTS);
+    };
+
 
 protected:
     /// check whether the coordinates are along the respective axis

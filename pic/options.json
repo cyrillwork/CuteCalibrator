@@ -11,22 +11,25 @@
             "boarderWidth": 3
         },
 
-	"en": {
-                "0": "Touch the target to continue ",
-                "1": "or wait to cancel",
-                "2": "Mistouch detected, restarting...",
-                "3": "Calibration completed"
-	},
-        "ru": {
-                "0": "Нажмите на цель, чтобы продолжить, ",
-                "1": "или ожидайте, чтобы отменить калибровку",
-                "2": "Некорректное нажатие. Перезапуск...",
-                "3": "Калибровка завершена"
-        },
-	"fr": {
-                "0": "Touchez la cible pour continuer",
-                "1": "ou attendez pour annuler",
-                "2": "Intéraction tactile incorrecte. Redémarrage en cours…",
-                "3": "La calibration est terminée"
-	}
+        "en":   [   "Touch the target to continue ",
+                    "or wait to cancel",
+                    "Mistouch detected, restarting...",
+                    "Calibration completed",
+                    "Test mode. Check calibration"
+                ]
+        ,
+        "ru": [
+                "Нажмите на цель, чтобы продолжить, ",
+                "или ожидайте, чтобы отменить калибровку",
+                "Некорректное нажатие. Перезапуск...",
+                "Калибровка завершена",
+                "Тестовый режим. Проверте калибровку"
+        ],
+        "fr": [
+                "Touchez la cible pour continuer",
+                "ou attendez pour annuler",
+                "Intéraction tactile incorrecte. Redémarrage en cours…",
+                "La calibration est terminée",
+                "Test mode. Check calibration"
+        ]
 }

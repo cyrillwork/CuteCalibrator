@@ -42,6 +42,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("ou attendez pour annuler");
 			texts->push_back("Intéraction tactile incorrecte. Redémarrage en cours…");
 			texts->push_back("La calibration est terminée");
+			texts->push_back("Test mode. Check calibration.");
 		}
 		break;
 
@@ -51,6 +52,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("или ожидайте, чтобы отменить калибровку");
 			texts->push_back("Некорректное нажатие. Перезапуск...");
 			texts->push_back("Калибровка завершена");
+			texts->push_back("Test mode. Check calibration.");
 		}
 		break;
 
@@ -60,6 +62,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("or wait to cancel");
 			texts->push_back("Mistouch detected, restarting...");
 			texts->push_back("Calibration completed");
+			texts->push_back("Test mode. Check calibration.");
 		}
 	}
 }
@@ -125,18 +128,21 @@ bool get_common_data_json(CommonData &data, const Lang& lang)
                 }
             }
             else
-
             if(node == lang.toString())
             {
                 //std::cout << "node=" << node << std::endl;
                 const auto &doc = it->value;
-                if(doc.IsObject())
+                if(doc.IsArray())
                 {
-                    data.getDisplay_texts()->push_back(doc["0"].GetString());
-                    data.getDisplay_texts()->push_back(doc["1"].GetString());
-                    data.getDisplay_texts()->push_back(doc["2"].GetString());
-                    data.getDisplay_texts()->push_back(doc["3"].GetString());
+                    for(auto iii = doc.Begin(); iii < doc.End(); ++iii)
+                    {
+                        data.getDisplay_texts()->push_back(iii->GetString());
+                    }
                     result = true;
+                }
+                else
+                {
+                    std::cout << "Error json, lang strings aren't array !!!" << std::endl;
                 }
             }
         }

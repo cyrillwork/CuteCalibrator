@@ -28,8 +28,10 @@
 
 #include "calibrator.hh"
 
-#include "gui/gtkmm.hpp"
+//#include "gui/gtkmm.hpp"
 #include "gui/gui_common.hpp"
+#include "gui/calibration.hpp"
+#include "gui/testmode.hpp"
 
 #include <iostream>
 #include <thread>
@@ -106,9 +108,21 @@ int main(int argc, char** argv)
     auto data = std::make_shared<CommonData>();
     data->initDataFromFile(calibrator->options->getLang().toString());
 
-    CalibrationArea area(calibrator, data);
-    win.add(area);
-    area.show();
+
+    std::shared_ptr<CalibrationArea> area = nullptr;
+
+    if(calibrator->options->getTestMode())
+    {
+        area = std::make_shared<TestMode>(calibrator, data);
+    }
+    else
+    {
+        area = std::make_shared<Calibration>(calibrator, data);
+    }
+
+    win.add(*area);
+
+    area->show();
 
     Gtk::Main::run(win);
     Gtk::Main::quit();
