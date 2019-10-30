@@ -51,7 +51,7 @@ bool Calibration::on_expose_event(GdkEventExpose *event)
         //cr->clip();
 
         cr->set_font_face(mainFont);
-        cr->set_font_size(fontSize);
+        cr->set_font_size(currentFont.fontSize);
         setColor(cr, Blue);
 
         double text_height = -1;
@@ -83,12 +83,12 @@ bool Calibration::on_expose_event(GdkEventExpose *event)
                 cr->get_text_extents((*commonData->getDisplay_texts())[FirstLine], extent);
                 cr->move_to(x + (text_width-extent.width)/2, y);
                 cr->show_text((*commonData->getDisplay_texts())[FirstLine]);
-                y += text_height + interLines;
+                y += text_height + currentFont.interLines;
 
                 cr->get_text_extents((*commonData->getDisplay_texts())[SecondLine], extent);
                 cr->move_to(x + (text_width-extent.width)/2, y);
                 cr->show_text((*commonData->getDisplay_texts())[SecondLine]);
-                y += text_height + interLines;
+                y += text_height + currentFont.interLines;
             }
             cr->stroke();
         }
@@ -244,7 +244,7 @@ bool Calibration::on_expose_event(GdkEventExpose *event)
             setColor(cr, Green);
 
             // Frame the message
-            cr->set_font_size(fontSize);
+            cr->set_font_size(currentFont.fontSize);
             Cairo::TextExtents extent;
             cr->get_text_extents(this->message, extent);
             text_width = extent.width;

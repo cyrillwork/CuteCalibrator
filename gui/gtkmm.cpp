@@ -33,7 +33,6 @@ CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
     commonData(data),
     time_elapsed(0),
     message(NULL)
-
 {
 
     set_flags(Gtk::CAN_FOCUS);
@@ -71,23 +70,20 @@ CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
 
 
     if(calibrator->options->getSmall())
-    {
-       fontSize      = smallFontSize;
-       interLines    = smallInterLines;
-       nameFont      = smallNameFont;
-
-       mainFont = Cairo::ToyFontFace::create(   nameFont,
-                                     Cairo::FONT_SLANT_NORMAL, /*Cairo::FONT_SLANT_ITALIC,*/
-                                     Cairo::FONT_WEIGHT_NORMAL /*Cairo::FONT_WEIGHT_BOLD*/);
+    {        
+       currentFont =  data->getSmallFont();
     }
     else
     {
-        mainFont = Cairo::ToyFontFace::create(   nameFont,
-                                      Cairo::FONT_SLANT_NORMAL, /*Cairo::FONT_SLANT_ITALIC,*/
-                                      Cairo::FONT_WEIGHT_NORMAL /*Cairo::FONT_WEIGHT_BOLD*/);
+        currentFont =  data->getDefaultFont();
     }
-    //std::cout << "nameFont " << nameFont << std::endl;
 
+    mainFont = Cairo::ToyFontFace::create(  currentFont.name,
+                                  Cairo::FONT_SLANT_NORMAL, /*Cairo::FONT_SLANT_ITALIC,*/
+                                  Cairo::FONT_WEIGHT_NORMAL /*Cairo::FONT_WEIGHT_BOLD*/);
+
+
+    //std::cout << "nameFont " << nameFont << std::endl;
 }
 
 void CalibrationArea::set_display_size(int width, int height)

@@ -67,29 +67,6 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 	}
 }
 
-void get_display_texts_testmode(std::list<std::string> *texts, PtrCalibrator /*calibrator*/)
-{
-    std::string str;
-    /* 1st line */
-    str = "Touchscreen test mode";
-    /*
-    const char* sysfs_name = calibrator->get_sysfs_name();
-    if(sysfs_name != NULL) {
-        str += " for '";
-        str += sysfs_name;
-        str += "'";
-    }
-    */
-    texts->push_back(str);
-    /* 2nd line */
-    str = "Press screen for testing...";
-    texts->push_back(str);
-    /* 3rd line */
-    str = "";
-    texts->push_back(str);
-    /* 4th line */
-    texts->push_back("(To abort, press any key)");
-}
 
 bool get_common_data_json(CommonData &data, const Lang& lang)
 {
@@ -128,6 +105,32 @@ bool get_common_data_json(CommonData &data, const Lang& lang)
                 }
             }
             else
+
+            if(node == "default font")
+            {
+                const auto &doc = it->value;
+                if(doc.IsObject())
+                {
+                    data.setDefaultFont(
+                        CommonData::Font(doc["name"].GetString(), doc["fontSize"].GetInt(), doc["interLines"].GetInt())
+                    );
+                }
+
+            }
+            else
+
+            if(node == "small font")
+            {
+                const auto &doc = it->value;
+                if(doc.IsObject())
+                {
+                    data.setSmallFont(
+                        CommonData::Font(doc["name"].GetString(), doc["fontSize"].GetInt(), doc["interLines"].GetInt())
+                    );
+                }
+            }
+            else
+
             if(node == lang.toString())
             {
                 //std::cout << "node=" << node << std::endl;
@@ -171,7 +174,9 @@ CommonData::CommonData(const int time_step,
     crossCircle(cross_circle),
     clockRadius(clock_radius),
     clockLineWidth(clock_line_width),
-    defaultBoarderWidth(boarderWidth)
+    defaultBoarderWidth(boarderWidth),
+    defaultFont("SansSerif", 36, 12),
+    smallFont("Roboto", 26, 8)
 {
     display_texts = std::make_shared<std::vector<std::string> >();
 }
@@ -273,4 +278,24 @@ void CommonData::initDataFromFile(const std::string &lang)
         get_display_texts_default(display_texts, Lang(lang));
     }
 
+}
+
+CommonData::Font CommonData::getDefaultFont() const
+{
+    return defaultFont;
+}
+
+void CommonData::setDefaultFont(const Font&value)
+{
+    defaultFont = value;
+}
+
+CommonData::Font CommonData::getSmallFont() const
+{
+    return smallFont;
+}
+
+void CommonData::setSmallFont(const Font&value)
+{
+    smallFont = value;
 }

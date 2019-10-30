@@ -45,8 +45,19 @@ public:
                 const int boarderWidth = 3,
                 const std::string &lang = "en");
 
-
     CommonData(const std::string &lang);
+
+    struct Font
+    {
+        Font(){}
+        Font(std::string n, int s, int i):
+            name(n), fontSize(s), interLines(i)
+        {}
+
+        std::string name;
+        int fontSize;
+        int interLines;
+    };
 
     int getTimeStep() const;
     void setTimeStep(int value);    // in milliseconds
@@ -81,6 +92,12 @@ public:
 
     void initDataFromFile(const std::string &lang);
 
+    CommonData::Font getDefaultFont() const;
+    void setDefaultFont(const CommonData::Font& value);
+
+    CommonData::Font getSmallFont() const;
+    void setSmallFont(const CommonData::Font& value);
+
 private:
 
     // Timeout parameters
@@ -96,6 +113,9 @@ private:
     int clockLineWidth;
 
     int defaultBoarderWidth;
+
+    CommonData::Font defaultFont;
+    CommonData::Font smallFont;
 
     std::shared_ptr<std::vector<std::string> > display_texts = nullptr;
 };

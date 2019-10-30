@@ -11,6 +11,20 @@
             "boarderWidth": 3
         },
 
+        "default font":
+        {
+            "name": "SansSerif",
+            "fontSize": 36,
+            "interLines": 12
+        },
+
+        "small font":
+        {
+            "name": "Roboto",
+            "fontSize": 26,
+            "interLines": 8
+        },
+
         "en":   [   "Touch the target to continue ",
                     "or wait to cancel",
                     "Mistouch detected, restarting...",

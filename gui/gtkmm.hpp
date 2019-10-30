@@ -95,19 +95,8 @@ protected:
 
     void setColor(Cairo::RefPtr<Cairo::Context> cr, const Color& color) const;
 
-
-    std::string nameFont = "SansSerif";
-
-    int smallFontSize              = 26;
-    int smallInterLines            = 8;
-    std::string smallNameFont      = "Roboto";
-
-    int fontSize      = 36;
-    int interLines    = 12;
-
     bool showLastMessage        = false;
     bool successCalibaration    = false;
-
 
     const Color Black   = {0.0,     0.0,    0.0};
     const Color Green   = {0.0,     0.8,    0.0};
@@ -116,6 +105,7 @@ protected:
     const Color White   = {1.0,     1.0,    1.0};
     const Color Gray    = {0.5,     0.5,    0.5};
 
+    CommonData::Font currentFont;
     Cairo::RefPtr<Cairo::ToyFontFace> mainFont;
 };
 
