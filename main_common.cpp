@@ -36,8 +36,14 @@
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XInput.h>
+#include <X11/Xatom.h>
+#include <X11/extensions/XI2.h>
+#include <X11/extensions/XInput2.h>
 
-static const char* VERSION = "3.0";
+#include <algorithm>
+#include <unordered_map>
+
+static const char* VERSION = "2.2";
 
 
 // strdup: non-ansi
@@ -50,6 +56,190 @@ static char* my_strdup(const char* s)
         return nullptr;
 
     return (char*) memcpy(p, s, len);
+}
+
+bool isTouchDevice(XIDeviceInfo *dev)
+{
+    int i;
+    XIAnyClassInfo **classes = dev->classes;
+    int num_classes = dev->num_classes;
+
+    bool result = false;
+
+    for (i = 0; i < num_classes; i++)
+    {
+        if(classes[i]->type == XITouchClass)
+        {
+            result = true;
+            break;
+        }
+    }
+
+    return result;
+}
+
+
+static int getIdTouch(Display *display, std::vector<int> &array_id)
+{
+    int ndevices;
+    int i, j;
+    XIDeviceInfo *info, *dev;
+
+    int result_device = -1;
+
+
+    info = XIQueryDevice(display, XIAllDevices, &ndevices);
+
+    for(i = 0; i < ndevices; i++)
+    {
+        dev = &info[i];
+
+        if (dev->use == XIMasterPointer || dev->use == XIMasterKeyboard)
+        {
+
+            //print_info_xi2(display, dev);
+
+            for (j = 0; j < ndevices; j++)
+            {
+                XIDeviceInfo* sd = &info[j];
+
+                if ((sd->use == XISlavePointer || sd->use == XISlaveKeyboard) &&
+                     (sd->attachment == dev->deviceid))
+                {
+
+                    auto it = std::find(array_id.begin(), array_id.end(), sd->deviceid);
+                    if(it == array_id.end())
+                    {
+                        continue;
+                    }
+
+                    if(isTouchDevice(sd))
+                    {
+                        //std::cout << " !!! Touch " << sd->deviceid << std::endl;
+                        return sd->deviceid;
+                    }
+                }
+            }
+        }
+    }
+
+    XIFreeDeviceInfo(info);
+
+    return result_device;
+}
+
+
+
+static void print_property(Display *dpy, XDevice* dev, Atom property)
+{
+    Atom                act_type;
+    char                *name;
+    int                 act_format;
+    unsigned long       j, nitems, bytes_after;
+    unsigned char       *data, *ptr;
+    int                 done = False, size = 0;
+
+    name = XGetAtomName(dpy, property);
+    printf("\t%s (%ld):\t", name, property);
+    XFree(name);
+
+    if (XGetDeviceProperty(dpy, dev, property, 0, 1000, False,
+                           AnyPropertyType, &act_type, &act_format,
+                           &nitems, &bytes_after, &data) == Success)
+    {
+        Atom float_atom = XInternAtom(dpy, "FLOAT", True);
+
+        ptr = data;
+
+        if (nitems == 0)
+            printf("<no items>");
+
+        switch(act_format)
+        {
+            case 8: size = sizeof(char); break;
+            case 16: size = sizeof(short); break;
+            case 32: size = sizeof(long); break;
+        }
+
+        for (j = 0; j < nitems; j++)
+        {
+            switch(act_type)
+            {
+                case XA_INTEGER:
+                    switch(act_format)
+                    {
+                        case 8:
+                            printf("%d", *((char*)ptr));
+                            break;
+                        case 16:
+                            printf("%d", *((short*)ptr));
+                            break;
+                        case 32:
+                            printf("%ld", *((long*)ptr));
+                            break;
+                    }
+                    break;
+                case XA_CARDINAL:
+                    switch(act_format)
+                    {
+                        case 8:
+                            printf("%u", *((unsigned char*)ptr));
+                            break;
+                        case 16:
+                            printf("%u", *((unsigned short*)ptr));
+                            break;
+                        case 32:
+                            printf("%lu", *((unsigned long*)ptr));
+                            break;
+                    }
+                    break;
+                case XA_STRING:
+                    if (act_format != 8)
+                    {
+                        printf("Unknown string format.\n");
+                        done = True;
+                        break;
+                    }
+                    printf("\"%s\"", ptr);
+                    j += strlen((char*)ptr); /* The loop's j++ jumps over the
+                                                terminating 0 */
+                    ptr += strlen((char*)ptr); /* ptr += size below jumps over
+                                                  the terminating 0 */
+                    break;
+                case XA_ATOM:
+                    {
+                        Atom a = *(Atom*)ptr;
+                        name = (a) ? XGetAtomName(dpy, a) : NULL;
+                        printf("\"%s\" (%d)", name ? name : "None", (int)a);
+                        XFree(name);
+                        break;
+                    }
+                default:
+                    if (float_atom != None && act_type == float_atom)
+                    {
+                        printf("%f", *((float*)ptr));
+                        break;
+                    }
+
+                    name = XGetAtomName(dpy, act_type);
+                    printf("\t... of unknown type '%s'\n", name);
+                    XFree(name);
+                    done = True;
+                    break;
+            }
+
+            ptr += size;
+
+            if (done == True)
+                break;
+            if (j < nitems - 1)
+                printf(", ");
+        }
+        printf("\n");
+        XFree(data);
+    } else
+        printf("\tFetch failure\n");
+
 }
 
 
@@ -65,10 +255,10 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
 {
     bool pre_device_is_id = true;
     bool pre_device_is_sysfs = false;
-    int found = 0;
-    XID device_id_first = (XID) -1;
-    std::string device_name_first;
-    XYinfo device_axys_first = {};
+    int found = 0;    
+
+    std::vector<int> array_id;
+    std::unordered_map<int, XYinfo> coords;
 
     if(pre_device)
     {
@@ -80,6 +270,7 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
         fprintf(stderr, "Unable to connect to X server\n");
         exit(1);
     }
+
 
     int xi_opcode, event, error;
     if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &event, &error))
@@ -197,30 +388,20 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
                 }
                 else
                 {
+
                     /* a calibratable device (has 2 axis valuators) */
                     found++;
                     device_id = list->id;
-                    device_name = my_strdup(list->name);
-
-                    if(device_id_first == (XID) -1)
-                    {
-                        device_id_first = device_id;
-                        device_name_first = device_name;
-
-
-                        device_axys_first.x.min = ax[0].min_value;
-                        device_axys_first.x.max = ax[0].max_value;
-                        device_axys_first.y.min = ax[1].min_value;
-                        device_axys_first.y.max = ax[1].max_value;
-
-                    }
-
                     device_name = my_strdup(list->name);
 
                     device_axys.x.min = ax[0].min_value;
                     device_axys.x.max = ax[0].max_value;
                     device_axys.y.min = ax[1].min_value;
                     device_axys.y.max = ax[1].max_value;
+
+                    array_id.push_back(list->id);
+                    coords[(int)list->id] = device_axys;
+
 
                     if (list_devices)
                     {
@@ -230,12 +411,8 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
                                list->type,
                                list->num_classes,
                                list->use);
-//                        if(list->inputclassinfo)
-//                        {
-//                            std::cout << "c_class = " << list->inputclassinfo->c_class << std::endl;
-//                        }
-
                     }
+
                 }
             }
 
@@ -248,20 +425,19 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
         }
 
     }
-    XFreeDeviceList(slist);
-    XCloseDisplay(display);
 
     if(found > 1)
     {
-        if(device_name_first == device_name)
-        {                        
-            device_id_multi = device_id;
-            device_id = device_id_first;
-
-            device_axys = device_axys_first;
+        auto id = getIdTouch(display, array_id);
+        if(id != -1)
+        {
+            device_id = id;
+            device_axys = coords[device_id];
         }
-        //device_id = device_id_first;
     }
+
+    XFreeDeviceList(slist);
+    XCloseDisplay(display);
 
     return found;
 }
