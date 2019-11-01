@@ -43,7 +43,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-static const char* VERSION = "3.0";
+static const char* VERSION = "3.1";
 
 
 // strdup: non-ansi

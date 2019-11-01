@@ -114,7 +114,7 @@ void CalibrationArea::redraw()
         const Gdk::Rectangle rect(0, 0, display_width, display_height);
         win->invalidate_rect(rect, false);
         //std::cout << " set_keep_above redraw " << std::endl;
-    }
+    }            
 }
 
 
@@ -122,6 +122,17 @@ void CalibrationArea::redraw()
 void CalibrationArea::draw_message(const char* msg)
 {
     this->message = msg;
+}
+
+void CalibrationArea::exit(int code)
+{
+    Glib::RefPtr<Gdk::Window> win = get_window();
+    if (win)
+    {
+        win->hide();
+    }
+
+    ::exit(code);
 }
 
 void CalibrationArea::setColor(Cairo::RefPtr<Cairo::Context> cr, const CalibrationArea::Color& color) const
@@ -138,7 +149,10 @@ bool CalibrationArea::on_key_press_event(GdkEventKey *event)
 {
     calibrator->restore_calibration();
     (void) event;
-    exit(0);
+
+    this->exit(0);
+
+    return true;
 }
 
 void CalibrationArea::checkFinish()
@@ -147,12 +161,12 @@ void CalibrationArea::checkFinish()
     successCalibaration = calibrator->finish(display_width, display_height);
     if (successCalibaration)
     {
-        exit(0);
+        this->exit(0);
     }
     else
     {
         // TODO, in GUI ?
         fprintf(stderr, "Error1: unable to apply or save configuration values");
-        exit(1);
+        this->exit(1);
     }
 }

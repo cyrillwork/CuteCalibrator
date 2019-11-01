@@ -93,6 +93,7 @@ protected:
     void set_display_size(int width, int height);
     void redraw();
     void draw_message(const char* msg);
+    void exit(int code);
 
     void setColor(Cairo::RefPtr<Cairo::Context> cr, const Color& color) const;
     void setColora(Cairo::RefPtr<Cairo::Context> cr, const Color& color, const double alpha) const;
