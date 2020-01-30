@@ -13,6 +13,8 @@ CalibratorBuilder::CalibratorBuilder(const CalibratorBuilder& builder)
     testMode = builder.getTestMode();
     lang = builder.getLang();
     small = builder.getSmall();
+    touchID = builder.getTouchID();
+    timeout = builder.getTimeout();
 }
 
 CalibratorBuilder* CalibratorBuilder::setThrMisclick(int value)
@@ -137,6 +139,26 @@ XID CalibratorBuilder::getDevice_id_multi() const
 void CalibratorBuilder::setDevice_id_multi(const XID&value)
 {
     device_id_multi = value;
+}
+
+bool CalibratorBuilder::getTouchID() const
+{
+    return touchID;
+}
+
+void CalibratorBuilder::setTouchID(bool value)
+{
+    touchID = value;
+}
+
+int CalibratorBuilder::getTimeout() const
+{
+    return timeout;
+}
+
+void CalibratorBuilder::setTimeout(int value)
+{
+    timeout = value;
 }
 
 int CalibratorBuilder::getThrMisclick() const

@@ -1,24 +1,23 @@
 
 #include "calibration.hpp"
 
-
 #define MAX_RIGHT       10
 #define MAX_LEFT        69
 #define MOVE_STEP       2
 
 
-Calibration::Calibration(PtrCalibrator calb, PtrCommonData data):
-    CalibrationArea (calb, data),
-    animate(0),
-    animateDirection(true)
+Calibration::Calibration(PtrCalibrator calb, PtrCommonData data, Gtk::Window*_parent):
+    CalibrationArea (calb, data, _parent)
+    , animate(0)
+    , animateDirection(true)
 {
     // Listen for mouse events
     add_events(Gdk::KEY_PRESS_MASK | Gdk::BUTTON_PRESS_MASK);
 
-
     for(const auto& iii: fileNames)
     {
-        try {
+        try
+        {
             images.push_back( Cairo::ImageSurface::create_from_png(Calibrator::getPathResource() + iii) );
         }
         catch (std::exception)
@@ -27,7 +26,6 @@ Calibration::Calibration(PtrCalibrator calb, PtrCommonData data):
             loadImages = false;
         }
     }
-
 }
 
 bool Calibration::on_expose_event(GdkEventExpose *event)
@@ -201,8 +199,6 @@ bool Calibration::on_expose_event(GdkEventExpose *event)
         //Draw clock
         if(!showLastMessage)
         {
-            int del_clock = 120;
-
             // Draw the clock background
             setColor(cr, Blue);
             cr->set_line_width(1);
@@ -281,6 +277,14 @@ bool Calibration::on_button_press_event(GdkEventButton *event)
     // Handle click
     time_elapsed = 0;
 
+//    std::cout << "GdkEventButton" << std::endl;
+//    std::cout << "GdkEvent type" << (int)event->type << std::endl;
+//    std::cout << "Device name=" << event->device->name << std::endl;
+//    std::cout << "Device source=" << event->device->source << std::endl;
+//    std::cout << "Device mode=" << event->device->mode << std::endl;
+//    std::cout << "window =" << event->button << std::endl;
+
+
     if(!showLastMessage)
     {
         bool success = calibrator->add_click((int)event->x_root, (int)event->y_root);
@@ -319,6 +323,17 @@ bool Calibration::on_button_press_event(GdkEventButton *event)
 
 bool Calibration::on_timer_signal()
 {
+    if(isCloseWindow != -1)
+    { //downcount for close application
+        --isCloseWindow;
+        if(isCloseWindow == 0)
+        {
+            ::exit(0);
+        }
+        return true;
+    }
+
+
     if (calibrator->options->getUse_timeout())
     {
         time_elapsed += commonData->getTimeStep();
@@ -327,25 +342,26 @@ bool Calibration::on_timer_signal()
             if(showLastMessage)
             {
                 checkFinish();
+
+                return true;
             }
 
             calibrator->restore_calibration();
 
-            exit(0);
+            this->exit(0);
         }
 
         // Update clock
         Glib::RefPtr<Gdk::Window> win = get_window();
-
         if (win)
         {
             //win->set_keep_above();
             //std::cout << " set_keep_above on_timer_signal " << std::endl;
 
-//            const Gdk::Rectangle rect(display_width/2 - clock_radius - clock_line_width,
-//                                     display_height/2 - clock_radius - clock_line_width,
-//                                     2 * clock_radius + 1 + 2 * clock_line_width,
-//                                     2 * clock_radius + 1 + 2 * clock_line_width);
+//            const Gdk::Rectangle rect(display_width/2 - commonData->getClockRadius() - commonData->getClockLineWidth(),
+//                                     display_height/2 - commonData->getClockRadius() - commonData->getClockLineWidth(),
+//                                     2 * commonData->getClockRadius() + 1 + 2 * commonData->getClockLineWidth(),
+//                                     2 * commonData->getClockRadius() + 1 + 2 * commonData->getClockLineWidth());
 
             const Gdk::Rectangle rect( 0, 0, display_width, display_height);
 

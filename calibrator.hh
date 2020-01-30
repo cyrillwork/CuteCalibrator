@@ -88,11 +88,22 @@ class WrongCalibratorException : public std::invalid_argument {
 class Calibrator;
 using PtrCalibrator = std::shared_ptr<Calibrator>;
 
+struct CalibratorData
+{
+    int id;
+    std::string deviceNode;
+};
+
+
 /// Base class for calculating new calibration parameters
 class Calibrator
 {
-
 public:
+
+    static int argX;
+    static int argY;
+
+    static std::shared_ptr<std::vector<CalibratorData>> arrayCalibrators;
 
     /// Parse arguments and create calibrator
     static PtrCalibrator make_calibrator(int argc, char** argv);
@@ -189,7 +200,6 @@ private:
 
     static std::string pathResource;
 };
-
 
 
 // Interfance for a CalibratorTester

@@ -21,20 +21,22 @@
  * THE SOFTWARE.
  */
 
+#include <gtkmm/main.h>
+#include <gtkmm/window.h>
+
 #include "gui/gtkmm.hpp"
 #include "gui/gui_common.hpp"
 #include <thread>
 #include <iostream>
 #include <exception>
 
-
-CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
-    calibrator(calb),
-    commonData(data),
-    time_elapsed(0),
-    message(NULL)
+CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data, Gtk::Window* _parent):
+    calibrator(calb)
+    , commonData(data)
+    , time_elapsed(0)
+    , message(NULL)
+    , parent(_parent)
 {
-
     set_flags(Gtk::CAN_FOCUS);
 
     // parse geometry string
@@ -67,7 +69,6 @@ CalibrationArea::CalibrationArea(PtrCalibrator calb, PtrCommonData data):
         sigc::slot<bool> slot = sigc::mem_fun(*this, &CalibrationArea::on_timer_signal);
         Glib::signal_timeout().connect(slot, commonData->getTimeStep());
     }
-
 
     if(calibrator->options->getSmall())
     {        
@@ -126,13 +127,10 @@ void CalibrationArea::draw_message(const char* msg)
 
 void CalibrationArea::exit(int code)
 {
-    Glib::RefPtr<Gdk::Window> win = get_window();
-    if (win)
-    {
-        win->hide();
-    }
+    isCloseWindow = 3;
 
-    ::exit(code);
+    //parent->fullscreen();
+    //parent->resize(1, 1);
 }
 
 void CalibrationArea::setColor(Cairo::RefPtr<Cairo::Context> cr, const CalibrationArea::Color& color) const
@@ -151,7 +149,6 @@ bool CalibrationArea::on_key_press_event(GdkEventKey *event)
     (void) event;
 
     this->exit(0);
-
     return true;
 }
 
@@ -159,6 +156,7 @@ void CalibrationArea::checkFinish()
 {
     // Recalibrate
     successCalibaration = calibrator->finish(display_width, display_height);
+
     if (successCalibaration)
     {
         this->exit(0);

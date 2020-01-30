@@ -1,10 +1,10 @@
+#include "touchid.hpp"
 
-#include "testmode.hpp"
-
-TestMode::TestMode(PtrCalibrator calb, PtrCommonData data, Gtk::Window*_parent):
+TouchID::TouchID(PtrCalibrator calb, PtrCommonData data, Gtk::Window*_parent):
     CalibrationArea (calb, data, _parent),
-    isPressButton(false),
-    pointsColor(Gray), textColor(Blue), clockColor(Blue),
+    pointsColor(Gray),
+    textColor(Blue),
+    clockColor(Blue),
     XClose(-1), YClose(-1), WidthClose(-1), HeightClose(-1)
 {
     // Listen for mouse events
@@ -14,14 +14,47 @@ TestMode::TestMode(PtrCalibrator calb, PtrCommonData data, Gtk::Window*_parent):
                 Gdk::BUTTON_MOTION_MASK );
 
     calibrator->setBigReserve();
+
+    if(Calibrator::getVerbose())
+    {
+        if(Calibrator::arrayCalibrators->size() > 0)
+        {
+            std::cout << "list id with input devices " << std::endl;
+        }
+        for(auto iii: *Calibrator::arrayCalibrators)
+        {
+            std::cout << "id = " << iii.id << " device node = "<< iii.deviceNode << std::endl;
+        }
+    }
+
+    //touchCallBack = std::make_shared<TouchCallBack>();
+    //const auto func1 = &(this->eventTouchID);
+
+    for(auto iii: *Calibrator::arrayCalibrators)
+    {
+        auto ptrFS1 = std::make_shared<InotifyFS>(iii.id, iii.deviceNode);
+
+        ptrFS1->Init(&TouchID::eventTouchID);
+
+        arrayInotifyFS.push_back(ptrFS1);
+        //std::cout << "Set inotify id = " << iii.id << " device node = "<< iii.deviceNode << std::endl;
+    }
+
+    if(calibrator->options->getTimeout() > 0)
+    {
+        time_elapsed = 0;//calibrator->options->getTimeout() * 1000;
+        commonData->setMaxTime(calibrator->options->getTimeout() * 1000);
+    }
+
 }
 
-bool TestMode::on_expose_event(GdkEventExpose *event)
+bool TouchID::on_expose_event(GdkEventExpose *event)
 {
     // check that screensize did not change (if no manually specified geometry)
     if (calibrator->options->getGeometry() == NULL &&
          (display_width != get_width() ||
-         display_height != get_height()) ) {
+         display_height != get_height()) )
+    {
         set_display_size(get_width(), get_height());
     }
 
@@ -34,8 +67,6 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
         setColor(cr, White);
         cr->rectangle(event->area.x, event->area.y, event->area.width, event->area.height);
         cr->fill();
-        //cr->clip();
-
         cr->set_font_face(mainFont);
         cr->set_font_size(currentFont.fontSize);
         setColor(cr, Blue);
@@ -63,54 +94,28 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
         setColor(cr, pointsColor);
         cr->set_line_width(2*widthPoint);
 
-        // Draw the points
-        for (int i = 0; i < calibrator->get_numclicks(); ++i)
-        {
-            if(!checkCloseButton(calibrator->get_X(i), calibrator->get_Y(i)))
-            {
-                setColor(cr, pointsColor);
-                cr->arc(calibrator->get_X(i), calibrator->get_Y(i), widthPoint, 0.0, 2.0 * M_PI);
-                cr->stroke();
-            }
-            else
-            {
-                setColora(cr, pointsColor, 0.1);
-                cr->arc(calibrator->get_X(i), calibrator->get_Y(i), widthPoint, 0.0, 2.0 * M_PI);
-                cr->stroke();
-            }
-        }
-
-
-
         { //Draw Main Text
             y -= 3;
             setColor(cr, textColor);
 
             cr->get_text_extents((*commonData->getDisplay_texts())[FirstLine], extent);
             cr->move_to(x + (text_width-extent.width)/2, y);
-            cr->show_text((*commonData->getDisplay_texts())[TestMessage]);
 
-            y += text_height + currentFont.interLines;
+            std::string showText{""};
 
-            cr->stroke();
-        }
+//            std::cout << "TouchIDMessage = " << TouchIDMessage << std::endl;
+//            std::cout << "size = " << (*commonData->getDisplay_texts()).size() << std::endl;
 
-        { //Draw close button
-            cr->set_line_width(2);
-
-            if(XClose == -1)
+            if( (*commonData->getDisplay_texts()).size() > TouchIDMessage)
             {
-                setCoordClose(cr);
+                showText = (*commonData->getDisplay_texts())[TouchIDMessage];
             }
 
-            cr->rectangle(XClose - del1, YClose  -  HeightClose - del1, WidthClose + 2*del1, HeightClose + 2*del1);
+            cr->show_text(showText);
 
-            cr->move_to(XClose, YClose);
-            cr->show_text((*commonData->getDisplay_texts())[CloseButton]);
-
+            y += text_height + currentFont.interLines;
             cr->stroke();
         }
-
 
         //Draw clock
         {
@@ -127,19 +132,6 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
             cr->stroke();
 
 
-            /*
-            if(calibrator->get_use_timeout())
-            {
-                // Draw the clock background
-                cr->arc(display_width/2, display_height/2, clock_radius/2, 0.0, 2.0 * M_PI);
-
-                //setColor(cr, Gray);
-                setColor(cr, White);
-                cr->fill_preserve();
-                cr->stroke();
-            }
-            */
-
             cr->set_line_width(commonData->getClockLineWidth());
             cr->arc(display_width/2, display_height/2 + del_clock, (commonData->getClockRadius() - commonData->getClockLineWidth())/2,
                     3/2.0*M_PI, (3/2.0*M_PI) + ((double)time_elapsed/(double)commonData->getMaxTime()) * 2*M_PI);
@@ -147,61 +139,18 @@ bool TestMode::on_expose_event(GdkEventExpose *event)
             //setColor(cr, Blue);
             cr->stroke();
         }
-
         cr->restore();
-
     }
 
     return true;
 }
 
-
-bool TestMode::on_button_press_event(GdkEventButton *event)
-{
-
-    // Handle click
-    time_elapsed = 0;
-
-    calibrator->add_click_simple((int)event->x_root, (int)event->y_root);
-
-    // Force a redraw
-    redraw();
-    isPressButton = true;
-
-
-    return true;
-}
-
-bool TestMode::on_button_release_event(GdkEventButton *event)
-{
-    //std::cout << "on_button_press_event" << std::endl;
-    if(checkCloseButton((int)event->x_root, (int)event->y_root))
-    {
-       ::exit(0);
-    }
-
-    //std::cout << "on_button_release_event " << calibrator->get_numclicks() << std::endl;
-    isPressButton = false;
-    return true;
-}
-
-bool TestMode::on_motion_notify_event(GdkEventMotion*event)
-{
-    if(isPressButton)
-    {
-        calibrator->add_click_simple((int)event->x_root, (int)event->y_root);
-        // Force a redraw
-        redraw();
-    }
-
-    return true;
-}
-
-bool TestMode::on_timer_signal()
+bool TouchID::on_timer_signal()
 {
     if (calibrator->options->getUse_timeout())
     {
         time_elapsed += commonData->getTimeStep();
+
         if (time_elapsed > commonData->getMaxTime())
         {
             ::exit(0);
@@ -219,8 +168,6 @@ bool TestMode::on_timer_signal()
                                         2 * commonData->getClockRadius() + 1 + 2 * commonData->getClockLineWidth()
                                     );
 
-//            const Gdk::Rectangle rect( 0, 0, display_width, display_height);
-
             win->invalidate_rect(rect, false);
         }
     }
@@ -228,7 +175,13 @@ bool TestMode::on_timer_signal()
     return true;
 }
 
-void TestMode::setCoordClose(Cairo::RefPtr<Cairo::Context> cr)
+void TouchID::eventTouchID(int id)
+{
+    std::cout << id << std::endl;
+    ::exit(0);
+}
+
+void TouchID::setCoordClose(Cairo::RefPtr<Cairo::Context> cr)
 {
     //Draw close button
     double XXX =  X[2];
@@ -245,16 +198,3 @@ void TestMode::setCoordClose(Cairo::RefPtr<Cairo::Context> cr)
     YClose = YYY - (extentClose.height/2);
 }
 
-bool TestMode::checkCloseButton(double X, double Y)
-{
-    int del2 = 10;
-    if ( (XClose - del1 - del2 < X ) && ( X < XClose - del1 + WidthClose + 2*del1 + del2) &&
-            (YClose  -  HeightClose - del1 - del2 < Y) && (Y < YClose + del1 + del2)
-            )
-    {
-        return true;
-    }
-
-    return false;
-
-}

@@ -32,6 +32,8 @@
 #include <cstdlib>
 #include <cmath>
 
+#define SET_RAW_CALIBRATION
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 1
 #endif
@@ -71,6 +73,8 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
         options->setDevice_id(devInfo->id);
     }
 
+    //std::cout << "!!!!!!!!!!! options->getDevice_id()= " << options->getDevice_id() << std::endl;
+
     iDev = XOpenDevice(display, options->getDevice_id());
 
     if (!iDev)
@@ -89,7 +93,6 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
         }
     }
 
-
     // XGetDeviceProperty vars
     Atom            property;
     Atom            act_type;
@@ -106,27 +109,35 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
     {
         XCloseDevice(display, iDev);
         XCloseDisplay(display);
+
         throw WrongCalibratorException("Evdev: \"Evdev Axis Calibration\" property missing, not a (valid) evdev device");
     }
     else
     {
-
         if (act_format != 32 || act_type != XA_INTEGER)
         {
             XCloseDevice(display, iDev);
             XCloseDisplay(display);
-            throw WrongCalibratorException("Evdev: invalid \"Evdev Axis Calibration\" property format");
 
+            throw WrongCalibratorException("Evdev: invalid \"Evdev Axis Calibration\" property format");
         }
         else
         {
-            printf("DEBUG: Evdev Axis Calibration not set, setting to axis valuators to be sure.\n");
+            if (verbose)
+                printf("DEBUG: Evdev Axis Calibration not set, setting to axis valuators to be sure.\n");
 
             if(!options->getTestMode())
-            { //If mode calibration, set raw calibration first
-                printf("DEBUG: Calibration set raw calibration\n");
+            {
 
+#ifdef SET_RAW_CALIBRATION
+                //If mode calibration, set raw calibration first
+                if (verbose)
+                {
+                    printf("DEBUG: Calibration set raw calibration\n");
+                }
                 (void) set_calibration(old_axys);
+#endif
+
             }
             else
             { //Set current calibration
@@ -135,34 +146,6 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
             }
         }
 
-        /*
-        if (nitems == 0)
-        {
-            if (verbose)
-                printf("DEBUG: Evdev Axis Calibration not set, setting to axis valuators to be sure.\n");
-
-            // No axis calibration set, set it to the default one
-            // QUIRK: when my machine resumes from a sleep,
-            // the calibration property is no longer exported through xinput, but still active
-            // not setting the values here would result in a wrong first calibration
-            (void) set_calibration(old_axys);
-
-        }
-        else
-        if (nitems > 0)
-        {
-            ptr = data;
-
-            old_axys.x.min = *((long*)ptr);
-            ptr += sizeof(long);
-            old_axys.x.max = *((long*)ptr);
-            ptr += sizeof(long);
-            old_axys.y.min = *((long*)ptr);
-            ptr += sizeof(long);
-            old_axys.y.max = *((long*)ptr);
-            ptr += sizeof(long);
-        }       
-        */
         //for restore
         if (nitems > 0)
         {
@@ -225,14 +208,15 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
         }
     }
 
+    if(verbose)
+    {
+        printf("Calibrating EVDEV driver for \"%s\" id=%i\n", options->getDevice_name(), (int)options->getDevice_id());
 
-    printf("Calibrating EVDEV driver for \"%s\" id=%i\n", options->getDevice_name(), (int)options->getDevice_id());
+        old_axys.print();
 
-    old_axys.print();
-
-    printf("\tcurrent calibration values (from XInput): min_x=%d, max_x=%d and min_y=%d, max_y=%d\n",
-                old_axys.x.min, old_axys.x.max, old_axys.y.min, old_axys.y.max);
-
+        printf("\tcurrent calibration values (from XInput): min_x=%d, max_x=%d and min_y=%d, max_y=%d\n",
+                    old_axys.x.min, old_axys.x.max, old_axys.y.min, old_axys.y.max);
+    }
 }
 
 // Destructor
@@ -343,6 +327,18 @@ bool CalibratorEvdev::finish(int width, int height)
         std::swap(x_max, y_max);
     }
 
+    if(Calibrator::argX > 0)
+    {
+        x_min -= Calibrator::argX;
+        x_max -= Calibrator::argX;
+    }
+
+    if(Calibrator::argY > 0)
+    {
+        y_min -= Calibrator::argY;
+        y_max -= Calibrator::argY;
+    }
+
     // the screen was divided in num_blocks blocks, and the touch points were at
     // one block away from the true edges of the screen.
     const float block_x = width/(float)num_blocks;
@@ -369,6 +365,22 @@ bool CalibratorEvdev::finish(int width, int height)
     // round and put in new_axis struct
     new_axis.x.min = round(x_min); new_axis.x.max = round(x_max);
     new_axis.y.min = round(y_min); new_axis.y.max = round(y_max);
+
+//    if(Calibrator::argX > 0)
+//    {
+//        auto del_x = old_axys.x.max - old_axys.x.min;
+//        std::cout << "del_x=" << del_x << std::endl;
+//        new_axis.x.min -= del_x;
+//        new_axis.x.max -= del_x;
+//    }
+
+//    if(Calibrator::argY > 0)
+//    {
+//        auto del_y = old_axys.y.max - old_axys.y.min;
+//        std::cout << "del_y=" << del_y << std::endl;
+//        new_axis.y.min -= del_y;
+//        new_axis.y.max -= del_y;
+//    }
 
     // finish the data, driver/calibrator specific
     return finish_data(new_axis);
@@ -495,7 +507,10 @@ bool CalibratorEvdev::set_invert_xy(const int invert_x, const int invert_y)
 
 bool CalibratorEvdev::set_calibration(const XYinfo new_axys)
 {
-    printf("\tSetting calibration data: %d, %d, %d, %d\n", new_axys.x.min, new_axys.x.max, new_axys.y.min, new_axys.y.max);
+    if (verbose)
+    {
+        printf("\tSetting calibration data: %d, %d, %d, %d\n", new_axys.x.min, new_axys.x.max, new_axys.y.min, new_axys.y.max);
+    }
 
     // xinput set-int-prop 4 223 32 5 500 8 300
     int arr_cmd[4];

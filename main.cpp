@@ -27,24 +27,25 @@
 #include <cairomm/context.h>
 
 #include "calibrator.hh"
-
-//#include "gui/gtkmm.hpp"
 #include "gui/gui_common.hpp"
 #include "gui/calibration.hpp"
 #include "gui/testmode.hpp"
+#include "gui/touchid.hpp"
 
 #include <iostream>
 #include <thread>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 int main(int argc, char** argv)
 {    
-    //std::cout << "Cute calibration"  << std::endl;
     auto calibrator = Calibrator::make_calibrator(argc, argv);
 
-    //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    //auto iii = ::system("echo");
+
     // GTK-mm setup
     Gtk::Main kit(argc, argv);
-
     Glib::RefPtr< Gdk::Screen > screen = Gdk::Screen::get_default();
 
     //int num_monitors = screen->get_n_monitors(); TODO, multiple monitors?
@@ -56,11 +57,12 @@ int main(int argc, char** argv)
     if(!calibrator->options->getGeometry())
     {
         Gdk::Rectangle rect;
-
         screen->get_monitor_geometry(0, rect);
 
         if(Calibrator::getVerbose())
         {
+            std::cout << "X=" << rect.get_x() << std::endl;
+            std::cout << "Y=" << rect.get_y() << std::endl;
             std::cout << "Width=" << rect.get_width() << std::endl;
             std::cout << "Height=" << rect.get_height() << std::endl;
         }
@@ -80,20 +82,41 @@ int main(int argc, char** argv)
         {
             int width   = 0;
             int height  = 0;
+            int X = 0;
+            int Y = 0;
 
             std::string strWidth(str1, 0, pos);
             std::string strHeight(str1, pos + 1, str1.size() - pos - 1);
 
             width = std::atoi(strWidth.c_str());
-            height = std::atoi(strHeight.c_str());
+            height = std::atoi(strHeight.c_str());            
+
+            auto pos_x1 = str1.find_first_of("+");
+            if(pos_x1 != std::string::npos)
+            {
+                auto pos_x2 = str1.find_first_of("+", pos_x1 + 1);
+                if(pos_x2 != std::string::npos)
+                {
+                    std::string strX(str1, pos_x1 + 1, pos_x2 - pos_x1 - 1);
+                    std::string strY(str1, pos_x2 + 1, str1.size() - pos_x2 - 1);
+
+                    X = std::atoi(strX.c_str());
+                    Y = std::atoi(strY.c_str());
+                }
+            }
 
             if(Calibrator::getVerbose())
             {
+                std::cout << "X=" << X << std::endl;
+                std::cout << "Y=" << Y << std::endl;
                 std::cout << "Width=" << width << std::endl;
                 std::cout << "Height=" << height << std::endl;
             }
 
-            win.move(0, 0);
+            Calibrator::argX = X;
+            Calibrator::argY = Y;
+
+            win.move(X, Y);
             win.resize(width, height);
         }
     }
@@ -108,24 +131,33 @@ int main(int argc, char** argv)
     auto data = std::make_shared<CommonData>();
     data->initDataFromFile(calibrator->options->getLang().toString());
 
-
     std::shared_ptr<CalibrationArea> area = nullptr;
 
-    if(calibrator->options->getTestMode())
+    if(calibrator->options->getTouchID())
     {
-        area = std::make_shared<TestMode>(calibrator, data);
+        area = std::make_shared<TouchID>(calibrator, data, &win);
     }
     else
     {
-        area = std::make_shared<Calibration>(calibrator, data);
+        if(calibrator->options->getTestMode())
+        {
+            area = std::make_shared<TestMode>(calibrator, data, &win);
+        }
+        else
+        {
+            area = std::make_shared<Calibration>(calibrator, data, &win);
+        }
     }
 
-    win.add(*area);
 
+    win.add(*area);
     area->show();
+
 
     Gtk::Main::run(win);
     Gtk::Main::quit();
+    // Remove the current window
+    //mainApp->remove_window(*currentWindow);
 
     return 0;
 }

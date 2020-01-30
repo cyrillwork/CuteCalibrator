@@ -43,8 +43,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-static const char* VERSION = "3.1";
-
+static const char* VERSION = "3.9";
 
 // strdup: non-ansi
 static char* my_strdup(const char* s)
@@ -78,15 +77,74 @@ bool isTouchDevice(XIDeviceInfo *dev)
     return result;
 }
 
+static Atom xinput_parse_atom(Display *display, const char *name)
+{
+    Bool is_atom = True;
+    int i;
 
-static int getIdTouch(Display *display, std::vector<int> &array_id)
+    for (i = 0; name[i] != '\0'; i++) {
+        if (!isdigit(name[i])) {
+            is_atom = False;
+            break;
+        }
+    }
+
+    if (is_atom)
+        return atoi(name);
+    else
+        return XInternAtom(display, name, False);
+}
+
+static std::string get_xinput_prop(  const char * name,
+                                         Display *display,
+                                         XID id)
+{
+    Atom            property;
+    Atom            act_type;
+    int             act_format;
+    unsigned long   nitems, bytes_after;
+    unsigned char   *data;
+    unsigned char   buff[256] = {};
+
+    auto iDev = XOpenDevice(display, id);
+
+    if (!iDev)
+    {
+        XCloseDisplay(display);
+        return "";
+    }
+
+    property = xinput_parse_atom(display, name);
+
+    if (XGetDeviceProperty(display, iDev, property, 0, 1000, False,
+                           AnyPropertyType, &act_type, &act_format,
+                           &nitems, &bytes_after, &data) != Success)
+    {
+        XCloseDevice(display, iDev);
+        XCloseDisplay(display);
+    }
+
+//    std::cout << "act_format = " << act_format << std::endl;
+//    std::cout << "nitems = " << nitems << std::endl;
+
+    if((act_format == 8) && (nitems > 0))
+    {
+        std::copy_n(data, nitems, buff);
+        //std::cout << "buff = " << buff << std::endl;
+        XFree(data);
+        return std::string((char*)buff);
+    }
+
+    return "";
+}
+
+static int getIdTouch(Display *display, std::vector<int> &array_id, bool list_devices)
 {
     int ndevices;
     int i, j;
     XIDeviceInfo *info, *dev;
 
     int result_device = -1;
-
 
     info = XIQueryDevice(display, XIAllDevices, &ndevices);
 
@@ -96,8 +154,6 @@ static int getIdTouch(Display *display, std::vector<int> &array_id)
 
         if (dev->use == XIMasterPointer || dev->use == XIMasterKeyboard)
         {
-
-            //print_info_xi2(display, dev);
 
             for (j = 0; j < ndevices; j++)
             {
@@ -113,10 +169,25 @@ static int getIdTouch(Display *display, std::vector<int> &array_id)
                         continue;
                     }
 
-                    if(isTouchDevice(sd))
+                    if(isTouchDevice(sd) || (array_id.size() == 1))
                     {
-                        //std::cout << " !!! Touch " << sd->deviceid << std::endl;
-                        return sd->deviceid;
+                        if(result_device == -1)
+                        {
+                            result_device = sd->deviceid;
+                        }
+
+                        Calibrator::arrayCalibrators->push_back(
+                                    CalibratorData{
+                                            sd->deviceid,
+                                            get_xinput_prop("Device Node", display, sd->deviceid)
+                                    }
+                        );
+
+                        if (list_devices)
+                        {
+                            printf("Device \"%s\" id=%i\n", sd->name, (int)sd->deviceid);
+                        }
+
                     }
                 }
             }
@@ -260,11 +331,6 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
     std::vector<int> array_id;
     std::unordered_map<int, XYinfo> coords;
 
-    if(pre_device)
-    {
-        std::cout << "pre_device=" << pre_device << std::endl;
-    }
-
     Display* display = XOpenDisplay(nullptr);
     if (display == nullptr) {
         fprintf(stderr, "Unable to connect to X server\n");
@@ -338,8 +404,11 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
 
     for (int i=0; i<ndevices; i++, list++)
     {
+
         if (list->use == IsXKeyboard || list->use == IsXPointer) // virtual master device
+        {
             continue;
+        }
 
         // if we are looking for a specific device
         if (pre_device != nullptr)
@@ -360,12 +429,11 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
 
         for (int j=0; j<list->num_classes; j++)
         {
-
+            //std::cout << "any->c_class=" << any->c_class << std::endl;
             if (any->c_class == ValuatorClass)
 //                && (       (list->type == 112)     // TouchScreen
 //                        ||  (list->type == 109)*/ // Keyboard
 //                        ))
-
             {
                 XValuatorInfoPtr V = (XValuatorInfoPtr) any;
                 XAxisInfoPtr ax = (XAxisInfoPtr) V->axes;
@@ -381,14 +449,14 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
                 else
                     if (V->num_axes < 2 ||
                     (ax[0].min_value == -1 && ax[0].max_value == -1) ||
-                    (ax[1].min_value == -1 && ax[1].max_value == -1)) {
-                    if (verbose)
-                        printf("DEBUG: Skipping device '%s' id=%i, does not have two calibratable axes.\n",
-                            list->name, (int)list->id);
-                }
+                    (ax[1].min_value == -1 && ax[1].max_value == -1))
+                    {
+                        if (verbose)
+                            printf("DEBUG: Skipping device '%s' id=%i, does not have two calibratable axes.\n",
+                                list->name, (int)list->id);
+                    }
                 else
                 {
-
                     /* a calibratable device (has 2 axis valuators) */
                     found++;
                     device_id = list->id;
@@ -401,18 +469,6 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
 
                     array_id.push_back(list->id);
                     coords[(int)list->id] = device_axys;
-
-
-                    if (list_devices)
-                    {
-                        printf("Device \"%s\" id=%i type=%ld num_classes=%d uses=%d\n",
-                               device_name,
-                               (int)device_id,
-                               list->type,
-                               list->num_classes,
-                               list->use);
-                    }
-
                 }
             }
 
@@ -426,9 +482,9 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
 
     }
 
-    if(found > 1)
+    if(found >= 1)
     {
-        auto id = getIdTouch(display, array_id);
+        auto id = getIdTouch(display, array_id, list_devices);
         if(id != -1)
         {
             device_id = id;
@@ -455,8 +511,9 @@ static void usage(char* cmd, unsigned thr_misclick)
         thr_misclick);
     fprintf(stderr, "\t--output-type <auto|xorg.conf.d|hal|xinput>: type of config to output (auto=automatically detect, default: auto)\n");
     fprintf(stderr, "\t--fake: emulate a fake device (for testing purposes)\n");
-    fprintf(stderr, "\t--geometry: manually provide the geometry (width and height) for the calibration window\n");
+    fprintf(stderr, "\t--geometry: format xterm style  widthxheight+X+Y (1920x1080+1920+0)\n");
     fprintf(stderr, "\t--no-timeout: turns off the timeout\n");
+    fprintf(stderr, "\t--timeout: amount sec to start calibration, use with touch_id option\n");
     fprintf(stderr, "\t--output-filename: write calibration data to file (USB: override default /etc/modprobe.conf.local\n");
     fprintf(stderr, "\t--lang <en>|<fr> :set language, default english\n");
     fprintf(stderr, "\t--small: set small type calibrator\n");
@@ -477,7 +534,6 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
 
     std::shared_ptr<CalibratorBuilder> builder = std::make_shared<CalibratorBuilder>();
 
-
     // parse input
     if (argc > 1)
     {
@@ -493,29 +549,42 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
             else
             // Verbose output ?
             if (strcmp("-v", argv[i]) == 0 ||
-                strcmp("--verbose", argv[i]) == 0) {
+                strcmp("--verbose", argv[i]) == 0)
+            {
                 verbose = true;
-            } else
-
+            }
+            else
+            if (strcmp("--touch_id", argv[i]) == 0)
+            {
+                builder->setTouchID(true);
+            }
+            else
+                if (strcmp("--timeout", argv[i]) == 0)
+                {
+                    builder->setTimeout(atoi(argv[++i]));
+                }
+                else
             //  Test mode
-            if (strcmp("--testmode", argv[i]) == 0) {
+            if (strcmp("--testmode", argv[i]) == 0)
+            {
                 builder->setTestMode(true);
-            } else            
+            }
+            else
             //  small
             if (strcmp("--small", argv[i]) == 0)
             {
                 builder->setSmall(true);
-            } else
+            }
+            else
             //  resource path
             if (strcmp("--path", argv[i]) == 0)
             {
                 Calibrator::pathResource = argv[++i];
-            } else
+            }
+            else
             if (strcmp("--lang", argv[i]) == 0)
             {
-                //std::cout << "argv[i] " << argv[i] << std::endl;
                 Lang lang(argv[++i]);
-                //std::cout << "get lang " << lang << std::endl;
                 builder->setLang(lang);
             } else
             // Just list devices ?
@@ -631,6 +700,16 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
         }
     }
 
+    if ((argc > 1) && (verbose))
+    {
+        std::cout << "Input params:"<< std::endl;
+
+        for(int i = 1; i != argc; ++i)
+        {
+            std::cout << argv[i] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     const char* device_name = nullptr;
     XYinfo      device_axys;
@@ -661,7 +740,7 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
             // printed the list in find_device
             if (nr_found == 0)
                 printf("No calibratable devices found.\n");
-            exit(2);
+            exit(0);
         }
 
         if (nr_found == 0)
@@ -671,13 +750,6 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
             else
                 fprintf (stderr, "Error: Device \"%s\" not found; use --list to list the calibratable input devices.\n", pre_device);
             exit(1);
-
-        } else
-        if (nr_found > 1)
-        {
-            printf ("Warning: multiple calibratable devices found, calibrating last one (%s)\n\tuse --device to select another one.\n", device_name);
-            //printf ("device_id=%ld\n", device_id);
-            //printf ("device_id_multi=%ld\n", device_id_multi);
         }
 
         if (verbose)
@@ -709,19 +781,16 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
                 device_axys.x.min, device_axys.x.max,
                 device_axys.y.min, device_axys.y.max);
         }
-
         builder->setAxys(device_axys);
     }
 
-
-    // Different device/driver, different ways to apply the calibration values
+// Different device/driver, different ways to apply the calibration values
 //    try
 //    {
 //        // try Usbtouchscreen driver
 //        return new CalibratorUsbtouchscreen(device_name, device_axys,
 //            thr_misclick, thr_doubleclick, output_type, geometry,
 //            use_timeout, output_filename, testMode);
-
 //    }
 //    catch(WrongCalibratorException& x)
 //    {
@@ -731,13 +800,7 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
 
     try
     {
-        // next, try Evdev driver (with XID)
-//        return new CalibratorEvdev(device_name, device_axys, lang, device_id, device_id_multi,
-//            thr_misclick, thr_doubleclick, output_type, geometry,
-//            use_timeout, output_filename, testMode, small);
-
         return std::make_shared<CalibratorEvdev>(builder);
-
     }
     catch(WrongCalibratorException& x)
     {

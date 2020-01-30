@@ -24,7 +24,11 @@
 #ifndef GUI_GTKMM_HPP
 #define GUI_GTKMM_HPP
 
+#include <gtkmm/main.h>
+#include <gtkmm/window.h>
 #include <gtkmm/drawingarea.h>
+#include <cairomm/context.h>
+
 #include "calibrator.hh"
 #include "gui/gui_common.hpp"
 
@@ -50,14 +54,15 @@ enum
     MissClick,
     EndMessage,
     TestMessage,
-    CloseButton
+    CloseButton,
+    TouchIDMessage,
 };
 
 class CalibrationArea : public Gtk::DrawingArea
 {
 public:
 
-    CalibrationArea(PtrCalibrator calb, PtrCommonData data);
+    CalibrationArea(PtrCalibrator calb, PtrCommonData data, Gtk::Window *_parent);
 
 protected:
 
@@ -108,8 +113,14 @@ protected:
     const Color White   = {1.0,     1.0,    1.0};
     const Color Gray    = {0.5,     0.5,    0.5};
 
+    int del_clock = 120;
+
     CommonData::Font currentFont;
     Cairo::RefPtr<Cairo::ToyFontFace> mainFont;
+
+    int isCloseWindow = -1;
+
+    Gtk::Window *parent;
 };
 
 #endif

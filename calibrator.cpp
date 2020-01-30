@@ -38,7 +38,11 @@ std::string Calibrator::pathResource = "./";
 const char* Calibrator::SYSFS_INPUT="/sys/class/input";
 const char* Calibrator::SYSFS_DEVNAME="device/name";
 
+int Calibrator::argX = 0;
 
+int Calibrator::argY = 0;
+
+std::shared_ptr<std::vector<CalibratorData>> Calibrator::arrayCalibrators = std::make_shared<std::vector<CalibratorData>>();
 
 Calibrator::Calibrator(const PtrCalibratorBuilder builder)
 {
@@ -138,17 +142,6 @@ bool Calibrator::add_click(int x, int y)
     }
 
     add_click_simple(x, y);
-
-//    clicked.x.push_back(x);
-//    clicked.y.push_back(y);
-//    clicked.num++;
-
-// Draw the points
-//    for (int i = 0; i < clicked.num; i++)
-//    {
-//        std::cout << "i=" << i << " x=" << clicked.x[i] << " y=" << clicked.y[i] << std::endl;
-//    }
-
 
     if (verbose)
         printf("DEBUG: Adding click %i (X=%i, Y=%i)\n", clicked.num-1, x, y);

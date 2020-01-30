@@ -44,6 +44,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("La calibration est terminée");
 			texts->push_back("Test mode. Check calibration.");
 			texts->push_back("Close");
+			texts->push_back("Touch screen to start calibration");
 		}
 		break;
 
@@ -55,6 +56,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("Калибровка завершена");
 			texts->push_back("Тестовый режим. Проверте калибровку.");
 			texts->push_back("Закрыть");
+			texts->push_back("Прикоснитесь к экрану для старта калибровки");
 		}
 		break;
 
@@ -66,6 +68,7 @@ void get_display_texts_default(std::shared_ptr<std::vector<std::string>> texts, 
 			texts->push_back("Calibration completed");
 			texts->push_back("Test mode. Check calibration.");
 			texts->push_back("Close");
+			texts->push_back("Touch screen to start calibration");
 		}
 	}
 }

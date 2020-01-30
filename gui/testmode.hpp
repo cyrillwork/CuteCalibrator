@@ -10,7 +10,7 @@ class TestMode: public CalibrationArea
 
 public:
 
-    TestMode(PtrCalibrator calb, PtrCommonData data);
+    TestMode(PtrCalibrator calb, PtrCommonData data, Gtk::Window *_parent);
 
 protected:
 

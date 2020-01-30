@@ -85,7 +85,9 @@ public:
        testMode{false},
        small{false},
        device_id((XID)-1),
-       device_id_multi((XID)-1)
+       device_id_multi((XID)-1),
+       touchID{false},
+       timeout{7}
    { }
 
    CalibratorBuilder(const CalibratorBuilder& builder);
@@ -133,6 +135,12 @@ public:
    XID getDevice_id_multi() const;
    void setDevice_id_multi(const XID&value);
 
+   bool getTouchID() const;
+   void setTouchID(bool value);
+
+   int getTimeout() const;
+   void setTimeout(int value);
+
 private:
    /// Name of the device (driver)
    const char* device_name;
@@ -148,6 +156,8 @@ private:
    bool small;
    XID device_id;// != (XID)-1)
    XID device_id_multi;// != (XID)-1)
+   bool touchID;
+   int timeout; //sec
 };
 
 

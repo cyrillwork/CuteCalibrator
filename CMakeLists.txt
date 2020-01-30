@@ -96,8 +96,9 @@ set(HEADER calibrator.hh
            gui/gui_common.hpp
            gui/calibration.hpp
            gui/testmode.hpp
+           gui/touchid.hpp
+           gui/inotifyfs.h
            )
-
 
 set(SOURCE calibrator.cpp
            calibratorbuilder.cpp
@@ -113,10 +114,12 @@ set(SOURCE calibrator.cpp
            gui/gui_common.cpp
            gui/calibration.cpp
            gui/testmode.cpp
+           gui/touchid.cpp
+           gui/inotifyfs.cpp
            )
 
-
 add_executable(../xinput_calibrator ${HEADER} ${SOURCE})
+
 target_link_libraries(../xinput_calibrator
         ${X11_LIBRARIES}
         ${GTKMM_LIBDIR}
@@ -142,5 +145,6 @@ target_link_libraries(../xinput_calibrator
 	-lgobject-2.0 
 	-lglib-2.0 
 	-lfontconfig
+        -lpthread
 	)
 	
