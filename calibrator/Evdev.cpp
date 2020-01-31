@@ -48,10 +48,6 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
     if(verbose)
     {
         std::cout << "device_id = " << options->getDevice_id() << std::endl;
-        if(options->getDevice_id_multi() != (XID)-1)
-        {
-            std::cout << "device_id_multi = " << options->getDevice_id_multi() << std::endl;
-        }
     }
 
     // init
@@ -81,16 +77,6 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
     {
         XCloseDisplay(display);
         throw WrongCalibratorException("Evdev: Unable to open device");
-    }
-
-    if( options->getDevice_id_multi() != (XID) -1 )
-    {
-        iDevMulti = XOpenDevice(display, options->getDevice_id_multi());
-        if (!iDevMulti)
-        {
-            XCloseDisplay(display);
-            throw WrongCalibratorException("Evdev: Unable to open device multi");
-        }
     }
 
     // XGetDeviceProperty vars
@@ -224,12 +210,6 @@ CalibratorEvdev::~CalibratorEvdev ()
 {
     XCloseDevice(display, iDev);
     XCloseDisplay(display);
-
-    if(iDevMulti)
-    {
-        XCloseDevice(display, iDevMulti);
-        XCloseDisplay(display);
-    }
 }
 
 
@@ -254,25 +234,6 @@ void CalibratorEvdev::restore_calibration()
                                AnyPropertyType, &act_type, &act_format,
                                &nitems, &bytes_after, &data);
     }
-
-
-    if(iDevMulti)
-    {
-        Atom            property = {};
-        Atom            act_type = {};
-        int             act_format;
-        unsigned long   nitems, bytes_after;
-        unsigned char   *data;
-
-
-        // get "Evdev Axis Calibration" property
-        property = xinput_parse_atom(display, "Evdev Axis Calibration");
-
-        XGetDeviceProperty(display, iDevMulti, property, 0, 1000, False,
-                               AnyPropertyType, &act_type, &act_format,
-                               &nitems, &bytes_after, &data);
-    }
-
 }
 
 
@@ -457,18 +418,6 @@ bool CalibratorEvdev::set_swapxy(const int swap_xy)
             printf("DEBUG: Failed to set swap X and Y axes.\n");
     }
 
-    if(iDevMulti)
-    {
-        bool ret = xinput_do_set_int_prop("Evdev Axes Swap", display, iDevMulti, 8, 1, arr_cmd);
-
-        if (verbose) {
-            if (ret == true)
-                printf("DEBUG: Successfully set swapped X and Y axes = %d. multi dev\n", swap_xy);
-            else
-                printf("DEBUG: Failed to set swap X and Y axes. Multi dev\n");
-        }
-    }
-
     return ret;
 }
 
@@ -488,18 +437,6 @@ bool CalibratorEvdev::set_invert_xy(const int invert_x, const int invert_y)
             printf("DEBUG: Successfully set invert axis X=%d, Y=%d.\n", invert_x, invert_y);
         else
             printf("DEBUG: Failed to set axis inversion.\n");
-    }
-
-    if(iDevMulti)
-    {
-        int ret = xinput_do_set_int_prop("Evdev Axis Inversion", display, iDevMulti, 8, 2, arr_cmd);
-
-        if (verbose) {
-            if (ret == true)
-                printf("DEBUG: Successfully set invert axis X=%d, Y=%d. Multi dev\n", invert_x, invert_y);
-            else
-                printf("DEBUG: Failed to set axis inversion.Multi dev\n");
-        }
     }
 
     return ret;
@@ -528,34 +465,13 @@ bool CalibratorEvdev::set_calibration(const XYinfo new_axys)
 
     //printf("!!!!!!!!! ret=%d\n", ret);
 
-    if (verbose) {
+    if (verbose)
+    {
         if (ret == true)
             printf("DEBUG: Successfully applied axis calibration.\n");
         else
             printf("DEBUG: Failed to apply axis calibration.\n");
     }
-
-    if(iDevMulti){
-        bool ret = xinput_do_set_int_prop(  "Evdev Axis Calibration",
-                                            display,
-                                            iDevMulti,
-                                            32,
-                                            4,
-                                            arr_cmd);
-
-        //printf("!!!!!!!!! ret=%d\n", ret);
-
-        if (verbose) {
-            if (ret == true)
-                printf("DEBUG: Successfully applied axis calibration for multi dev.\n");
-            else
-                printf("DEBUG: Failed to apply axis calibration for multi dev.\n");
-        }
-
-    }
-
-
-
 
     return ret;
 }

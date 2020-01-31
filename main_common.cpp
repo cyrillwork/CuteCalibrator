@@ -322,7 +322,7 @@ static void print_property(Display *dpy, XDevice* dev, Atom property)
  * the data of the device is returned in the last 3 function parameters
  */
 int Calibrator::find_device(const char* pre_device, bool list_devices,
-        XID& device_id, const char*& device_name, XYinfo& device_axys, XID &device_id_multi)
+        XID& device_id, const char*& device_name, XYinfo& device_axys)
 {
     bool pre_device_is_id = true;
     bool pre_device_is_sysfs = false;
@@ -730,10 +730,9 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
     {
         /// Choose the device to calibrate
         XID         device_id           = (XID) -1;
-        XID         device_id_multi     = (XID) -1;
 
         // Find the right device
-        int nr_found = find_device(pre_device, list_devices, device_id, device_name, device_axys, device_id_multi);
+        int nr_found = find_device(pre_device, list_devices, device_id, device_name, device_axys);
 
         if (list_devices)
         {
@@ -760,7 +759,6 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
         builder->setAxys(device_axys);
         builder->setDevice_name(device_name);
         builder->setDevice_id(device_id);
-        builder->setDevice_id_multi(device_id_multi);
     }
 
     // override min/max XY from command line ?

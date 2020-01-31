@@ -131,16 +131,6 @@ void CalibratorBuilder::setDevice_id(const XID&value)
     device_id = value;
 }
 
-XID CalibratorBuilder::getDevice_id_multi() const
-{
-    return device_id_multi;
-}
-
-void CalibratorBuilder::setDevice_id_multi(const XID&value)
-{
-    device_id_multi = value;
-}
-
 bool CalibratorBuilder::getTouchID() const
 {
     return touchID;

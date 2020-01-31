@@ -84,8 +84,7 @@ public:
        output_filename{nullptr},
        testMode{false},
        small{false},
-       device_id((XID)-1),
-       device_id_multi((XID)-1),
+       device_id((XID)-1),       
        touchID{false},
        timeout{7}
    { }
@@ -132,9 +131,6 @@ public:
    XID getDevice_id() const;
    void setDevice_id(const XID&value);
 
-   XID getDevice_id_multi() const;
-   void setDevice_id_multi(const XID&value);
-
    bool getTouchID() const;
    void setTouchID(bool value);
 
@@ -155,7 +151,6 @@ private:
    Lang lang;
    bool small;
    XID device_id;// != (XID)-1)
-   XID device_id_multi;// != (XID)-1)
    bool touchID;
    int timeout; //sec
 };

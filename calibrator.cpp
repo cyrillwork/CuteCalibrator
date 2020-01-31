@@ -34,7 +34,7 @@
 
 // static instances
 bool Calibrator::verbose = false;
-std::string Calibrator::pathResource = "./";
+std::string Calibrator::pathResource = "./pic/";
 const char* Calibrator::SYSFS_INPUT="/sys/class/input";
 const char* Calibrator::SYSFS_DEVNAME="device/name";
 
