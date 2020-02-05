@@ -11,9 +11,10 @@ For run
 
 Improvements compared to original xinput_calibtator
 1. A nicer design:)
-2. Add X and Y to option geometry. This is used to calibrate multi-touch system.
-3. Add regim touch detected (option touch_id). This is used to determinate id touch in multi-touch system.
-4. Add test mode for checking current calibration.
+2. X and Y to option geometry. This is used to calibrate multi-touch system.
+3. Mode touch detected (option touch_id). This is used to determinate id touch in multi-touch system.
+4. Test mode for checking current calibration.
+5. Mode that combines "touch_id" and calibration (option crtc). In this mode, the "xinput map-to-output id output" command is automatically executed after definition touch_id.
 
 Deterioration
 1. Work only with evdev.
