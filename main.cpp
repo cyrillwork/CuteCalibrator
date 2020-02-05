@@ -31,18 +31,15 @@
 #include "gui/calibration.hpp"
 #include "gui/testmode.hpp"
 #include "gui/touchid.hpp"
+#include "gui/touchempty.hpp"
+#include "gui/touchfull.hpp"
 
 #include <iostream>
 #include <thread>
 
-#include <stdio.h>
-#include <stdlib.h>
-
 int main(int argc, char** argv)
 {    
     auto calibrator = Calibrator::make_calibrator(argc, argv);
-
-    //auto iii = ::system("echo");
 
     // GTK-mm setup
     Gtk::Main kit(argc, argv);
@@ -133,6 +130,17 @@ int main(int argc, char** argv)
 
     std::shared_ptr<CalibrationArea> area = nullptr;
 
+
+    if(calibrator->options->getCrtc().size() > 0)
+    {
+        area = std::make_shared<TouchFull>(calibrator, data, &win);
+    }
+    else
+    if(calibrator->options->getTouchEmpty())
+    {
+        area = std::make_shared<TouchEmpty>(calibrator, data, &win);
+    }
+    else
     if(calibrator->options->getTouchID())
     {
         area = std::make_shared<TouchID>(calibrator, data, &win);
@@ -149,10 +157,8 @@ int main(int argc, char** argv)
         }
     }
 
-
     win.add(*area);
     area->show();
-
 
     Gtk::Main::run(win);
     Gtk::Main::quit();

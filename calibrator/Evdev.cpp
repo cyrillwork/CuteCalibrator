@@ -42,11 +42,33 @@
 #endif
 
 // Constructor
-CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
+CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options, bool init):
     Calibrator (options)
+  , display{nullptr}
+  , devInfo{nullptr}
+  , iDev{nullptr}
+{
+    if(init)
+    {
+        Init();
+    }
+}
+
+// Destructor
+CalibratorEvdev::~CalibratorEvdev ()
+{
+    if(display && iDev)
+    {
+        XCloseDevice(display, iDev);
+        XCloseDisplay(display);
+    }
+}
+
+void CalibratorEvdev::Init()
 {
     if(verbose)
     {
+        std::cout << "Init CalibratorEvdev" << std::endl;
         std::cout << "device_id = " << options->getDevice_id() << std::endl;
     }
 
@@ -65,11 +87,11 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
         {
             XCloseDisplay(display);
             throw WrongCalibratorException("Evdev: Unable to find device");
-        }        
+        }
         options->setDevice_id(devInfo->id);
     }
 
-    //std::cout << "!!!!!!!!!!! options->getDevice_id()= " << options->getDevice_id() << std::endl;
+    std::cout << "!!!!!!!!!!! options->getDevice_id()= " << options->getDevice_id() << std::endl;
 
     iDev = XOpenDevice(display, options->getDevice_id());
 
@@ -160,7 +182,7 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
             ptr += sizeof(long);
 
         }
-        XFree(data);        
+        XFree(data);
     }
 
     // get "Evdev Axes Swap" property
@@ -205,13 +227,6 @@ CalibratorEvdev::CalibratorEvdev(PtrCalibratorBuilder options):
     }
 }
 
-// Destructor
-CalibratorEvdev::~CalibratorEvdev ()
-{
-    XCloseDevice(display, iDev);
-    XCloseDisplay(display);
-}
-
 
 void CalibratorEvdev::restore_calibration()
 {
@@ -234,6 +249,7 @@ void CalibratorEvdev::restore_calibration()
                                AnyPropertyType, &act_type, &act_format,
                                &nitems, &bytes_after, &data);
     }
+
 }
 
 
@@ -326,22 +342,6 @@ bool CalibratorEvdev::finish(int width, int height)
     // round and put in new_axis struct
     new_axis.x.min = round(x_min); new_axis.x.max = round(x_max);
     new_axis.y.min = round(y_min); new_axis.y.max = round(y_max);
-
-//    if(Calibrator::argX > 0)
-//    {
-//        auto del_x = old_axys.x.max - old_axys.x.min;
-//        std::cout << "del_x=" << del_x << std::endl;
-//        new_axis.x.min -= del_x;
-//        new_axis.x.max -= del_x;
-//    }
-
-//    if(Calibrator::argY > 0)
-//    {
-//        auto del_y = old_axys.y.max - old_axys.y.min;
-//        std::cout << "del_y=" << del_y << std::endl;
-//        new_axis.y.min -= del_y;
-//        new_axis.y.max -= del_y;
-//    }
 
     // finish the data, driver/calibrator specific
     return finish_data(new_axis);
@@ -465,8 +465,7 @@ bool CalibratorEvdev::set_calibration(const XYinfo new_axys)
 
     //printf("!!!!!!!!! ret=%d\n", ret);
 
-    if (verbose)
-    {
+    if (verbose) {
         if (ret == true)
             printf("DEBUG: Successfully applied axis calibration.\n");
         else

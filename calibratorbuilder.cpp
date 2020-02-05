@@ -1,5 +1,21 @@
 #include "calibratorbuilder.hh"
 
+CalibratorBuilder::CalibratorBuilder():
+    device_name{nullptr}
+  , thr_misclick{0}
+  , thr_doubleclick{7}
+  , output_type{OUTYPE_AUTO}
+  , geometry{nullptr}
+  , use_timeout{true}
+  , output_filename{nullptr}
+  , testMode{false}
+  , small{false}
+  , device_id((XID)-1)
+  , touchID{false}
+  , touchEmpty{false}
+  , timeout{10}
+{ }
+
 CalibratorBuilder::CalibratorBuilder(const CalibratorBuilder& builder)
 {
     device_name = builder.getDevice_name();
@@ -149,6 +165,26 @@ int CalibratorBuilder::getTimeout() const
 void CalibratorBuilder::setTimeout(int value)
 {
     timeout = value;
+}
+
+bool CalibratorBuilder::getTouchEmpty() const
+{
+    return touchEmpty;
+}
+
+void CalibratorBuilder::setTouchEmpty(bool value)
+{
+    touchEmpty = value;
+}
+
+std::string CalibratorBuilder::getCrtc() const
+{
+    return crtc;
+}
+
+void CalibratorBuilder::setCrtc(const std::string&value)
+{
+    crtc = value;
 }
 
 int CalibratorBuilder::getThrMisclick() const

@@ -8,7 +8,7 @@
 #include <sys/inotify.h>
 
 
-bool FileIsExist(const std::string& filePath)
+bool InotifyFS::FileIsExist(const std::string& filePath)
 {
     bool isExist = false;
     std::ifstream fin(filePath.c_str());
@@ -21,13 +21,14 @@ bool FileIsExist(const std::string& filePath)
 }
 
 
-InotifyFS::InotifyFS(int _id, const std::string& name):
+InotifyFS::InotifyFS(int _id, const std::string& name, CalibrationArea* _area):
     fd{-1}
   , id{_id}
   , fileName{name}
   , isRun{false}
   , mainPtr{nullptr}
   , timeout{100}
+  , area{_area}
 {        
 }
 
@@ -95,7 +96,7 @@ void InotifyFS::run()
                 ;
             }
 
-            OnAction(id);
+            OnAction(area, id);
             break;
         }
     }

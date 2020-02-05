@@ -36,13 +36,15 @@ class CalibratorEvdev: public Calibrator
 private:
     Display     *display;
     XDeviceInfo *devInfo;
-    XDevice     *iDev;    
+    XDevice     *iDev;
 
 public:
 
-    CalibratorEvdev(PtrCalibratorBuilder options);
+    CalibratorEvdev(PtrCalibratorBuilder options, bool init = true);
 
     virtual ~CalibratorEvdev();
+
+    void Init() override;
 
     /// calculate and apply the calibration
     bool finish(int width, int height) override;

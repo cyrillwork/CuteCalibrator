@@ -34,15 +34,16 @@
 
 // static instances
 bool Calibrator::verbose = false;
-std::string Calibrator::pathResource = "./pic/";
+std::string Calibrator::pathResource = "./";
 const char* Calibrator::SYSFS_INPUT="/sys/class/input";
 const char* Calibrator::SYSFS_DEVNAME="device/name";
 
 int Calibrator::argX = 0;
-
 int Calibrator::argY = 0;
 
 std::shared_ptr<std::vector<CalibratorData>> Calibrator::arrayCalibrators = std::make_shared<std::vector<CalibratorData>>();
+
+std::unordered_map<int, XYinfo> Calibrator::coordsMap;
 
 Calibrator::Calibrator(const PtrCalibratorBuilder builder)
 {
@@ -283,6 +284,11 @@ bool Calibrator::has_xorgconfd_support(Display* dpy) {
         XCloseDisplay(display);
 
     return has_support;
+}
+
+void Calibrator::setOld_axys(const XYinfo&value)
+{
+    old_axys = value;
 }
 
 const std::string& Calibrator::getPathResource()

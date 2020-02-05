@@ -97,6 +97,8 @@ set(HEADER calibrator.hh
            gui/calibration.hpp
            gui/testmode.hpp
            gui/touchid.hpp
+           gui/touchempty.hpp
+           gui/touchfull.hpp
            gui/inotifyfs.h
            )
 
@@ -115,6 +117,8 @@ set(SOURCE calibrator.cpp
            gui/calibration.cpp
            gui/testmode.cpp
            gui/touchid.cpp
+           gui/touchempty.cpp
+           gui/touchfull.cpp
            gui/inotifyfs.cpp
            )
 

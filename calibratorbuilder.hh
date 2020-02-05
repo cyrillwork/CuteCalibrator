@@ -12,7 +12,8 @@ float scaleAxis(float Cx, int to_max, int to_min, int from_max, int from_min);
 
 
 
-struct AxisInfo {
+struct AxisInfo
+{
     int min, max;
     bool invert;
 
@@ -22,7 +23,8 @@ struct AxisInfo {
     AxisInfo(const AxisInfo& old) :
         min(old.min), max(old.max), invert(old.invert) { }
 
-    void do_invert() {
+    void do_invert()
+    {
         invert = !invert;
     }
 };
@@ -74,20 +76,7 @@ using PtrCalibratorBuilder = std::shared_ptr<CalibratorBuilder>;
 class CalibratorBuilder
 {
 public:
-   CalibratorBuilder():
-       device_name{nullptr},
-       thr_misclick{0},
-       thr_doubleclick{7},
-       output_type{OUTYPE_AUTO},
-       geometry{nullptr},
-       use_timeout{true},
-       output_filename{nullptr},
-       testMode{false},
-       small{false},
-       device_id((XID)-1),       
-       touchID{false},
-       timeout{7}
-   { }
+   CalibratorBuilder();
 
    CalibratorBuilder(const CalibratorBuilder& builder);
 
@@ -127,7 +116,6 @@ public:
 
    void setDevice_name(const char*value);
 
-
    XID getDevice_id() const;
    void setDevice_id(const XID&value);
 
@@ -136,6 +124,12 @@ public:
 
    int getTimeout() const;
    void setTimeout(int value);
+
+   bool getTouchEmpty() const;
+   void setTouchEmpty(bool value);
+
+   std::string getCrtc() const;
+   void setCrtc(const std::string&value);
 
 private:
    /// Name of the device (driver)
@@ -152,7 +146,9 @@ private:
    bool small;
    XID device_id;// != (XID)-1)
    bool touchID;
+   bool touchEmpty;
    int timeout; //sec
+   std::string crtc; //sec
 };
 
 

@@ -7,13 +7,10 @@
 
 class TestMode: public CalibrationArea
 {
-
 public:
-
     TestMode(PtrCalibrator calb, PtrCommonData data, Gtk::Window *_parent);
 
 protected:
-
     bool on_expose_event(GdkEventExpose *event) override;
 
     bool on_button_press_event(GdkEventButton *event) override;
@@ -37,7 +34,6 @@ private:
     double WidthClose;
     double HeightClose;
     int del1 = 10;
-
 };
 
 #endif

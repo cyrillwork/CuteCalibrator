@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include "calibratorbuilder.hh"
 
@@ -99,7 +100,6 @@ struct CalibratorData
 class Calibrator
 {
 public:
-
     static int argX;
     static int argY;
 
@@ -135,6 +135,8 @@ public:
 
     void add_click_simple(int x, int y);
 
+    virtual void Init();
+
     virtual void restore_calibration() = 0;
 
     /// calculate and apply the calibration
@@ -156,6 +158,9 @@ public:
         clicked.y.reserve(RESERVE_POINTS);
     };
 
+    static std::unordered_map<int, XYinfo> coordsMap;
+
+    void setOld_axys(const XYinfo&value);
 
 protected:
     /// check whether the coordinates are along the respective axis
@@ -190,7 +195,7 @@ protected:
     XYinfo old_axys;
 
     /// Restore values
-    XYinfo restore_axys;
+    XYinfo restore_axys;    
 
 private:
 

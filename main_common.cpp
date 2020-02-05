@@ -43,7 +43,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-static const char* VERSION = "3.9";
+static const char* VERSION = "3.15";
 
 // strdup: non-ansi
 static char* my_strdup(const char* s)
@@ -169,7 +169,7 @@ static int getIdTouch(Display *display, std::vector<int> &array_id, bool list_de
                         continue;
                     }
 
-                    if(isTouchDevice(sd) || (array_id.size() == 1))
+                    //if(isTouchDevice(sd) || (array_id.size() == 1))
                     {
                         if(result_device == -1)
                         {
@@ -183,10 +183,10 @@ static int getIdTouch(Display *display, std::vector<int> &array_id, bool list_de
                                     }
                         );
 
-                        if (list_devices)
-                        {
-                            printf("Device \"%s\" id=%i\n", sd->name, (int)sd->deviceid);
-                        }
+//                        if (list_devices)
+//                        {
+//                            printf("Device \"%s\" id=%i\n", sd->name, (int)sd->deviceid);
+//                        }
 
                     }
                 }
@@ -329,10 +329,12 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
     int found = 0;    
 
     std::vector<int> array_id;
-    std::unordered_map<int, XYinfo> coords;
+
 
     Display* display = XOpenDisplay(nullptr);
-    if (display == nullptr) {
+
+    if (display == nullptr)
+    {
         fprintf(stderr, "Unable to connect to X server\n");
         exit(1);
     }
@@ -468,7 +470,12 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
                     device_axys.y.max = ax[1].max_value;
 
                     array_id.push_back(list->id);
-                    coords[(int)list->id] = device_axys;
+                    coordsMap[(int)list->id] = device_axys;
+
+                    if (list_devices)
+                    {
+                        printf("Device \"%s\" id=%i\n", device_name, (int)device_id);
+                    }
                 }
             }
 
@@ -488,7 +495,7 @@ int Calibrator::find_device(const char* pre_device, bool list_devices,
         if(id != -1)
         {
             device_id = id;
-            device_axys = coords[device_id];
+            device_axys = coordsMap[device_id];
         }
     }
 
@@ -507,17 +514,19 @@ static void usage(char* cmd, unsigned thr_misclick)
     fprintf(stderr, "\t--list: list calibratable input devices and quit\n");
     fprintf(stderr, "\t--device <device name or XID or sysfs event name (e.g event5)>: select a specific device to calibrate\n");
     fprintf(stderr, "\t--precalib: manually provide the current calibration setting (eg. the values in xorg.conf)\n");
-    fprintf(stderr, "\t--misclick: set the misclick threshold (0=off, default: %i pixels)\n",
-        thr_misclick);
+    fprintf(stderr, "\t--misclick: set the misclick threshold (0=off, default: %i pixels)\n", thr_misclick);
     fprintf(stderr, "\t--output-type <auto|xorg.conf.d|hal|xinput>: type of config to output (auto=automatically detect, default: auto)\n");
     fprintf(stderr, "\t--fake: emulate a fake device (for testing purposes)\n");
     fprintf(stderr, "\t--geometry: format xterm style  widthxheight+X+Y (1920x1080+1920+0)\n");
     fprintf(stderr, "\t--no-timeout: turns off the timeout\n");
+    fprintf(stderr, "\t--touch_id: run touch detecting mode\n");
+    fprintf(stderr, "\t--touch_empty: show empty window mode\n");
     fprintf(stderr, "\t--timeout: amount sec to start calibration, use with touch_id option\n");
     fprintf(stderr, "\t--output-filename: write calibration data to file (USB: override default /etc/modprobe.conf.local\n");
     fprintf(stderr, "\t--lang <en>|<fr> :set language, default english\n");
     fprintf(stderr, "\t--small: set small type calibrator\n");
     fprintf(stderr, "\t--testmode: run test mode\n");
+    fprintf(stderr, "\t--crtc: name video output (example: VGA-0 or DVI-D-0, get from xrandr) (Run touch detecting mode, then calibration)\n");
     fprintf(stderr, "\t--path <resource path>: set resource path\n");
 }
 
@@ -553,17 +562,27 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
             {
                 verbose = true;
             }
+            else                
+            if (strcmp("--touch_empty", argv[i]) == 0)
+            {
+                builder->setTouchEmpty(true);
+            }
+            else
+            if (strcmp("--crtc", argv[i]) == 0)
+            {
+                builder->setCrtc(argv[++i]);
+            }
             else
             if (strcmp("--touch_id", argv[i]) == 0)
             {
                 builder->setTouchID(true);
             }
             else
-                if (strcmp("--timeout", argv[i]) == 0)
-                {
-                    builder->setTimeout(atoi(argv[++i]));
-                }
-                else
+            if (strcmp("--timeout", argv[i]) == 0)
+            {
+                builder->setTimeout(atoi(argv[++i]));
+            }
+            else
             //  Test mode
             if (strcmp("--testmode", argv[i]) == 0)
             {
@@ -729,7 +748,7 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
     else
     {
         /// Choose the device to calibrate
-        XID         device_id           = (XID) -1;
+        XID         device_id           = (XID) -1;        
 
         // Find the right device
         int nr_found = find_device(pre_device, list_devices, device_id, device_name, device_axys);
@@ -738,7 +757,9 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
         {
             // printed the list in find_device
             if (nr_found == 0)
+            {
                 printf("No calibratable devices found.\n");
+            }
             exit(0);
         }
 
@@ -797,8 +818,15 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
 //    }
 
     try
-    {
-        return std::make_shared<CalibratorEvdev>(builder);
+    {        
+        if(builder->getCrtc().size() > 0)
+        {
+            return std::make_shared<CalibratorEvdev>(builder, false);
+        }
+        else
+        {
+            return std::make_shared<CalibratorEvdev>(builder);
+        }
     }
     catch(WrongCalibratorException& x)
     {
@@ -808,4 +836,8 @@ PtrCalibrator Calibrator::make_calibrator(int argc, char** argv)
 
     // lastly, presume a standard Xorg driver (evtouch, mutouch, ...)
     return std::make_shared<CalibratorXorgPrint>(builder);
+}
+
+void Calibrator::Init()
+{
 }
